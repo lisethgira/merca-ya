@@ -1,0 +1,1455 @@
+DOCUMENTO DE ANÁLISIS Y DISEÑO
+Aplicación web progresiva (PWA) de compra y venta de productos varios
+Identidad visual · Requisitos funcionales y no funcionales · Historias de usuario · Modelo entidad-relación · Script de base de datos
+Liseth Arelis Giraldo Morales
+Desarrolladora de software
+Rionegro, Antioquia
+Septiembre de 2026
+Tabla de contenido
+Si la tabla aparece vacía, haz clic derecho sobre ella en Word y elige «Actualizar campos».
+1. Introducción
+MercaYa es una aplicación web progresiva (PWA) de comercio electrónico tipo marketplace, en la que múltiples vendedores publican productos de distintas categorías y los clientes pueden buscarlos, comprarlos, pagarlos y calificarlos desde cualquier dispositivo, con la posibilidad de instalar la aplicación en la pantalla de inicio y consultarla aun con conectividad limitada. La plataforma es supervisada por un administrador que aprueba tiendas, modera publicaciones y atiende reportes.
+El presente documento reúne los artefactos de análisis y diseño del proyecto: la identidad visual, la especificación de requisitos funcionales y no funcionales, organizada según los lineamientos de la norma ISO/IEC/IEEE 29148:2018 y el modelo de calidad ISO/IEC 25010:2023; las historias de usuario con criterios de aceptación bajo el enfoque propuesto por Cohn (2004); el modelo entidad-relación y el script SQL de creación de la base de datos relacional en MySQL 8 alojada en Clever Cloud.
+1.1 Objetivo general
+Desarrollar una PWA de compra y venta de productos varios que conecte vendedores locales con clientes, garantizando una experiencia rápida, segura, instalable y disponible sin conexión.
+1.2 Objetivos específicos
+Especificar los requisitos funcionales y no funcionales para los roles administrador, vendedor y cliente.
+Traducir los requisitos en historias de usuario priorizadas y estimadas para un desarrollo ágil (Scrum).
+Diseñar un modelo de datos relacional normalizado que soporte pedidos multivendedor, pagos, reseñas y notificaciones.
+Implementar la base de datos en MySQL sobre Clever Cloud con integridad referencial, índices y datos iniciales.
+1.3 Alcance
+El alcance comprende el registro y autenticación con roles, la gestión de tiendas y productos, el catálogo con búsqueda y filtros, el carrito, el checkout con pasarela de pagos colombiana o contraentrega, el seguimiento de pedidos por ítem, las reseñas, las preguntas, los reportes, las notificaciones internas y push, y las capacidades PWA (instalación y modo sin conexión). Quedan fuera del alcance inicial la logística propia de envíos, la facturación electrónica ante la DIAN y el chat en tiempo real, que se proponen para versiones posteriores.
+1.4 Arquitectura y stack tecnológico
+Capa
+Tecnología
+Responsabilidad
+Frontend
+React + Vite, vite-plugin-pwa (Workbox), Tailwind CSS, React Router, Axios, Zustand o Context API
+Interfaz mobile-first, manifest, service worker, caché offline y consumo de la API REST.
+Backend
+Node.js + Express, mysql2/promise, JWT, bcrypt, zod, helmet, cors, express-rate-limit, web-push, Nodemailer
+API REST /api/v1, autenticación y autorización por roles, reglas de negocio, webhooks de pagos y notificaciones.
+Base de datos
+MySQL 8 (add-on de Clever Cloud), motor InnoDB, utf8mb4
+Persistencia relacional con integridad referencial y transacciones.
+Servicios externos
+Cloudinary o Cellar (S3), Wompi / Mercado Pago, proveedor SMTP
+Almacenamiento de imágenes, pagos y correos transaccionales.
+Despliegue
+Vercel (frontend) y Clever Cloud (backend Node.js + MySQL), GitHub
+Publicación con HTTPS e integración continua.
+1.5 Roles del sistema
+Rol
+Descripción
+Permisos principales
+Administrador
+Responsable de la operación y la confianza de la plataforma.
+Gestionar usuarios, tiendas, categorías, moderación de productos, reportes, pedidos, pagos e indicadores.
+Vendedor
+Usuario con tienda aprobada que publica productos.
+Gestionar su tienda, productos, imágenes, inventario, ventas recibidas, preguntas y estadísticas.
+Cliente
+Usuario que compra productos (rol por defecto al registrarse).
+Explorar, buscar, carrito, favoritos, comprar, pagar, seguir pedidos, reseñar, preguntar y reportar.
+Visitante
+Persona no autenticada (no es un rol almacenado).
+Explorar el catálogo y ver el detalle de productos; debe registrarse para comprar.
+2. Identidad visual (logo)
+El logo de MercaYa combina una bolsa de compras, símbolo universal del comercio, con un rayo que expresa la inmediatez de la marca («¡ya!»): comprar y vender de forma rápida y sencilla. El ícono se construye sobre un cuadrado redondeado con degradado índigo-violeta, formato que funciona como ícono de aplicación instalada (PWA) en Android, iOS y escritorio.
+Figura 1. Logo horizontal de MercaYa con eslogan
+Figura 2. Ícono de la aplicación (manifest PWA 192 × 192 y 512 × 512 px)
+2.1 Paleta de colores y tipografía
+Uso
+Color
+Código HEX
+Clase Tailwind sugerida
+Primario
+Índigo
+#4F46E5
+indigo-600
+Primario oscuro (textos de marca)
+Índigo profundo
+#312E81
+indigo-900
+Secundario / degradado
+Violeta
+#7C3AED
+violet-600
+Acento (botones de compra, ofertas)
+Naranja
+#F97316
+orange-500
+Texto secundario
+Gris
+#6B7280
+gray-500
+Tipografía: Poppins (Google Fonts), peso 700 para el nombre y 400 para el eslogan y textos de interfaz.
+Archivos entregados: mercaya-logo.svg / .png (logo horizontal), mercaya-icon.svg y PNG de 192 y 512 px para el manifest de vite-plugin-pwa (theme_color: #4F46E5, background_color: #FFFFFF).
+3. Requisitos funcionales
+Los requisitos funcionales describen los servicios que el sistema debe proporcionar y cómo debe reaccionar ante entradas y situaciones particulares (Sommerville, 2016). Se identifican con el prefijo RF, se agrupan por módulo y se priorizan como Alta, Media o Baja según su valor para el producto mínimo viable (MVP).
+Módulo 1. Autenticación y gestión de cuenta
+ID
+Nombre
+Descripción
+Rol
+Prioridad
+RF01
+Registro de cliente
+El sistema debe permitir que un visitante se registre con nombres, apellidos, correo electrónico, contraseña y teléfono, aceptando la política de tratamiento de datos. Por defecto se asigna el rol cliente.
+Visitante
+Alta
+RF02
+Solicitud de cuenta de vendedor
+El sistema debe permitir que un usuario solicite convertirse en vendedor creando una tienda (nombre, descripción, logo, municipio, contacto). La tienda queda en estado «pendiente» hasta que el administrador la apruebe.
+Cliente / Vendedor
+Alta
+RF03
+Inicio de sesión
+El sistema debe autenticar a los usuarios con correo y contraseña, emitiendo un token de acceso (JWT) y un token de refresco, y redirigirlos al panel correspondiente según su rol.
+Todos
+Alta
+RF04
+Cierre de sesión
+El sistema debe permitir cerrar sesión invalidando el token de refresco y limpiando los datos de sesión del dispositivo.
+Todos
+Alta
+RF05
+Recuperación de contraseña
+El sistema debe enviar un enlace temporal (vigencia de 30 minutos) al correo registrado para restablecer la contraseña.
+Todos
+Media
+RF06
+Gestión de perfil
+El sistema debe permitir consultar y actualizar datos personales, foto de perfil y contraseña (solicitando la contraseña actual).
+Todos
+Media
+RF07
+Gestión de direcciones
+El sistema debe permitir registrar, editar, eliminar y marcar como principal varias direcciones de envío (departamento, municipio, barrio, dirección y referencia).
+Cliente
+Alta
+RF08
+Control de acceso por roles
+El sistema debe restringir rutas del frontend y endpoints del backend según el rol (administrador, vendedor, cliente) mediante middleware de autorización.
+Sistema
+Alta
+Módulo 2. Administración
+ID
+Nombre
+Descripción
+Rol
+Prioridad
+RF09
+Panel de indicadores
+El sistema debe mostrar al administrador un dashboard con total de ventas, pedidos por estado, usuarios registrados, tiendas y productos pendientes de aprobación y reportes abiertos.
+Administrador
+Media
+RF10
+Gestión de usuarios
+El sistema debe permitir listar, buscar y filtrar usuarios, ver su detalle, cambiar su rol y activarlos, inactivarlos o bloquearlos.
+Administrador
+Alta
+RF11
+Gestión de tiendas
+El sistema debe permitir aprobar, rechazar o suspender tiendas, registrando el motivo, la fecha y el administrador responsable, y notificar al vendedor.
+Administrador
+Alta
+RF12
+Gestión de categorías
+El sistema debe permitir crear, editar, activar/desactivar y organizar categorías y subcategorías (jerarquía padre-hijo) con nombre, slug e ícono.
+Administrador
+Alta
+RF13
+Moderación de productos
+El sistema debe permitir revisar las publicaciones en estado «pendiente» y aprobarlas o rechazarlas indicando el motivo.
+Administrador
+Alta
+RF14
+Gestión de reportes
+El sistema debe listar las denuncias de productos, permitir cambiar su estado (abierto, en revisión, resuelto, descartado) y registrar la resolución.
+Administrador
+Media
+RF15
+Supervisión de pedidos y pagos
+El sistema debe permitir consultar todos los pedidos y pagos de la plataforma con filtros por fecha, estado, tienda y cliente.
+Administrador
+Media
+RF16
+Reportes exportables
+El sistema debe generar reportes de ventas por período y por tienda exportables en CSV o PDF.
+Administrador
+Baja
+Módulo 3. Vendedor
+ID
+Nombre
+Descripción
+Rol
+Prioridad
+RF17
+Perfil de tienda
+El sistema debe permitir al vendedor editar la información pública de su tienda (nombre, descripción, logo, municipio y contacto).
+Vendedor
+Alta
+RF18
+Gestión de productos
+El sistema debe permitir crear, consultar, editar y eliminar productos con nombre, descripción, categoría, precio, precio de oferta, stock, SKU y condición (nuevo, usado, reacondicionado).
+Vendedor
+Alta
+RF19
+Imágenes de producto
+El sistema debe permitir cargar hasta 6 imágenes por producto (JPG, PNG o WebP, máximo 2 MB c/u), ordenarlas y elegir la principal.
+Vendedor
+Alta
+RF20
+Pausar publicación
+El sistema debe permitir pausar y reactivar un producto publicado sin eliminarlo.
+Vendedor
+Media
+RF21
+Control de inventario
+El sistema debe descontar el stock al confirmar un pedido, reponerlo si se cancela y alertar al vendedor cuando el stock sea menor o igual a 3 unidades.
+Vendedor / Sistema
+Alta
+RF22
+Gestión de ventas recibidas
+El sistema debe mostrar al vendedor los ítems de pedidos de su tienda y permitirle cambiar su estado (en preparación, enviado con número de guía, entregado).
+Vendedor
+Alta
+RF23
+Responder preguntas
+El sistema debe permitir al vendedor ver y responder las preguntas que los clientes hacen sobre sus productos.
+Vendedor
+Media
+RF24
+Panel de ventas
+El sistema debe mostrar al vendedor sus ingresos, unidades vendidas, productos más vendidos y calificación promedio de su tienda.
+Vendedor
+Media
+Módulo 4. Cliente (catálogo y compras)
+ID
+Nombre
+Descripción
+Rol
+Prioridad
+RF25
+Explorar catálogo
+El sistema debe mostrar los productos publicados de tiendas aprobadas, con paginación o scroll infinito.
+Visitante / Cliente
+Alta
+RF26
+Búsqueda
+El sistema debe permitir buscar productos por texto en nombre y descripción (índice FULLTEXT).
+Visitante / Cliente
+Alta
+RF27
+Filtros y ordenamiento
+El sistema debe permitir filtrar por categoría, rango de precio, condición, municipio y calificación, y ordenar por relevancia, precio o fecha.
+Visitante / Cliente
+Alta
+RF28
+Detalle de producto
+El sistema debe mostrar galería de imágenes, precio, oferta, stock, datos de la tienda, reseñas y preguntas del producto.
+Visitante / Cliente
+Alta
+RF29
+Carrito de compras
+El sistema debe permitir agregar productos al carrito, modificar cantidades y eliminarlos, validando el stock disponible; el carrito se conserva entre sesiones.
+Cliente
+Alta
+RF30
+Favoritos
+El sistema debe permitir marcar y desmarcar productos como favoritos y consultarlos en una lista.
+Cliente
+Baja
+RF31
+Checkout
+El sistema debe permitir confirmar la compra seleccionando dirección, método de pago y mostrando el resumen (subtotal, envío, descuento, total). El pedido puede incluir productos de varias tiendas.
+Cliente
+Alta
+RF32
+Pagos
+El sistema debe integrar una pasarela de pagos colombiana (p. ej., Wompi o Mercado Pago: tarjeta, PSE, Nequi) y la opción contraentrega, actualizando el estado del pago mediante webhook.
+Cliente / Sistema
+Alta
+RF33
+Historial y seguimiento
+El sistema debe mostrar el historial de pedidos del cliente con el estado de cada ítem y el número de guía cuando exista.
+Cliente
+Alta
+RF34
+Cancelación de pedido
+El sistema debe permitir cancelar un pedido mientras ningún ítem haya sido enviado, reponiendo el stock.
+Cliente
+Media
+RF35
+Reseñas
+El sistema debe permitir calificar (1 a 5 estrellas) y comentar un producto solo cuando el ítem comprado esté entregado, una sola vez por ítem.
+Cliente
+Media
+RF36
+Preguntas al vendedor
+El sistema debe permitir al cliente publicar preguntas en la ficha de un producto.
+Cliente
+Media
+RF37
+Reportar producto
+El sistema debe permitir denunciar un producto indicando el motivo (fraude, prohibido, contenido inapropiado, información falsa, otro).
+Cliente
+Baja
+Módulo 5. Notificaciones y capacidades PWA
+ID
+Nombre
+Descripción
+Rol
+Prioridad
+RF38
+Notificaciones internas
+El sistema debe registrar notificaciones en una bandeja dentro de la app (nuevo pedido, cambio de estado, pregunta, aprobación de tienda) y marcarlas como leídas.
+Todos
+Media
+RF39
+Notificaciones push
+El sistema debe enviar notificaciones Web Push a los dispositivos suscritos cuando ocurran eventos relevantes, previa autorización del usuario.
+Todos
+Media
+RF40
+Instalación de la app
+El sistema debe ofrecer la instalación de la PWA en la pantalla de inicio (evento beforeinstallprompt en Android/escritorio e instrucciones para iOS).
+Todos
+Alta
+RF41
+Funcionamiento sin conexión
+El sistema debe mostrar el catálogo y las páginas visitadas desde caché cuando no haya conexión, e informar al usuario que está sin conexión; las compras requieren conexión.
+Todos
+Alta
+RF42
+Correos transaccionales
+El sistema debe enviar correos de bienvenida, recuperación de contraseña y confirmación de pedido.
+Sistema
+Media
+4. Requisitos no funcionales
+Los requisitos no funcionales establecen restricciones y atributos de calidad del sistema. Se clasifican según las características del modelo de calidad de producto ISO/IEC 25010:2023 (eficiencia de desempeño, seguridad, usabilidad, compatibilidad, fiabilidad, mantenibilidad y portabilidad) e incorporan exigencias legales colombianas. Cada requisito incluye un criterio verificable para su aceptación.
+ID
+Categoría
+Descripción
+Criterio de verificación
+RNF01
+Rendimiento
+La PWA debe obtener una puntuación ≥ 90 en Lighthouse (Performance) en móvil y un LCP inferior a 2,5 s en red 4G.
+Auditoría Lighthouse en cada release
+RNF02
+Rendimiento
+Los endpoints de consulta del catálogo deben responder en menos de 500 ms en el percentil 95 con 100 usuarios concurrentes.
+Pruebas de carga (k6 / Artillery)
+RNF03
+Portabilidad (PWA)
+La aplicación debe cumplir los criterios de instalabilidad: manifest.webmanifest con nombre, colores e íconos 192 y 512 px (incluye maskable), service worker generado con vite-plugin-pwa (Workbox) y servicio por HTTPS.
+Chrome DevTools > Application
+RNF04
+Disponibilidad offline
+Estrategias de caché: CacheFirst para recursos estáticos, StaleWhileRevalidate para imágenes y NetworkFirst para la API del catálogo; página de respaldo /offline.
+Prueba en modo avión
+RNF05
+Seguridad
+Las contraseñas se almacenan con bcrypt (mínimo 10 rondas) y deben tener al menos 8 caracteres, una mayúscula, un número y un símbolo.
+Revisión de código y pruebas unitarias
+RNF06
+Seguridad
+Token de acceso JWT con vigencia de 15 minutos y token de refresco de 7 días en cookie httpOnly, Secure y SameSite.
+Pruebas de integración
+RNF07
+Seguridad
+El backend aplica los controles del OWASP Top 10: helmet, CORS restringido al dominio del frontend, express-rate-limit en login (5 intentos/15 min), validación de entradas (zod o express-validator) y consultas parametrizadas con mysql2 para evitar inyección SQL.
+Checklist OWASP / escaneo ZAP
+RNF08
+Seguridad
+Toda la comunicación se realiza sobre HTTPS/TLS (certificados de Vercel y Clever Cloud).
+Verificación de certificados
+RNF09
+Legal
+El tratamiento de datos personales cumple la Ley 1581 de 2012 (Habeas Data): política visible, consentimiento explícito en el registro y opción de eliminación de la cuenta.
+Revisión legal / checklist
+RNF10
+Legal / Seguridad
+La aplicación no almacena datos de tarjetas; el pago se delega a la pasarela certificada PCI DSS y solo se guardan referencias y estados.
+Revisión del modelo de datos
+RNF11
+Usabilidad
+Diseño mobile-first y responsive entre 320 px y 1920 px usando los breakpoints de Tailwind CSS; una compra debe completarse en máximo 5 pasos desde el carrito.
+Pruebas de usabilidad con 5 usuarios
+RNF12
+Accesibilidad
+Cumplimiento del nivel AA de WCAG 2.1: contraste mínimo 4,5:1, navegación por teclado, textos alternativos y etiquetas en formularios.
+Lighthouse Accessibility ≥ 90 / axe
+RNF13
+Compatibilidad
+Funciona en las dos últimas versiones de Chrome, Edge, Firefox y Safari; Android 9+ e iOS 16.4+ (las notificaciones push en iOS requieren la PWA instalada).
+Pruebas cruzadas en dispositivos
+RNF14
+Disponibilidad
+Disponibilidad mínima del 99 % mensual en frontend (Vercel) y backend/base de datos (Clever Cloud).
+Monitoreo (UptimeRobot)
+RNF15
+Integridad
+El checkout se ejecuta en una transacción InnoDB; el stock se descuenta con UPDATE condicional (stock >= cantidad) para evitar sobreventa.
+Pruebas de concurrencia
+RNF16
+Recuperabilidad
+Se conservan copias de seguridad automáticas de la base de datos según el plan de Clever Cloud y un respaldo manual semanal (mysqldump).
+Restauración de prueba trimestral
+RNF17
+Eficiencia de recursos
+El backend usa un pool de conexiones mysql2 con connectionLimit ajustado al máximo de conexiones del plan de Clever Cloud (los planes gratuitos/pequeños tienen límites bajos).
+Revisión de configuración
+RNF18
+Mantenibilidad
+Backend organizado por capas o arquitectura hexagonal (rutas → controladores → casos de uso → repositorios), ESLint + Prettier, Git con ramas y commits convencionales.
+Revisión de pull requests
+RNF19
+Mantenibilidad
+Cobertura mínima de pruebas del 70 % en servicios y casos de uso (Vitest/Jest + Supertest).
+Reporte de cobertura en CI
+RNF20
+Mantenibilidad
+La API REST se documenta con OpenAPI/Swagger y versiona sus rutas (/api/v1).
+Swagger UI publicado
+RNF21
+Escalabilidad
+Las imágenes se guardan en un servicio externo (Cloudinary o Cellar S3 de Clever Cloud), no en la base de datos; todos los listados son paginados.
+Revisión de arquitectura
+RNF22
+Localización
+Interfaz en español, moneda en pesos colombianos con formato es-CO (Intl.NumberFormat) y zona horaria America/Bogota.
+Pruebas funcionales
+RNF23
+Observabilidad
+Registro de peticiones y errores (morgan/winston) con manejo centralizado de excepciones y respuestas de error uniformes.
+Revisión de logs
+5. Historias de usuario
+Las historias de usuario se redactan con la plantilla «Como [rol], quiero [funcionalidad], para [beneficio]» y cumplen el criterio INVEST (independiente, negociable, valiosa, estimable, pequeña y verificable) propuesto por Cohn (2004). Los criterios de aceptación siguen el esquema Dado-Cuando-Entonces. La prioridad usa la técnica MoSCoW (Must, Should, Could) y la estimación se expresa en puntos de historia de la serie de Fibonacci.
+5.1 Resumen del backlog
+ID
+Historia
+Rol
+Prioridad
+Puntos
+Requisitos
+HU01
+Registro de cliente
+Visitante
+Must
+3
+RF01
+HU02
+Inicio de sesión
+Usuario registrado
+Must
+3
+RF03, RF08
+HU03
+Recuperar contraseña
+Usuario registrado
+Should
+3
+RF05
+HU04
+Gestionar direcciones
+Cliente
+Must
+2
+RF07
+HU05
+Abrir mi tienda
+Usuario
+Must
+5
+RF02, RF17
+HU06
+Aprobar tiendas
+Administrador
+Must
+3
+RF11
+HU07
+Gestionar categorías
+Administrador
+Must
+3
+RF12
+HU08
+Gestionar usuarios
+Administrador
+Must
+3
+RF10
+HU09
+Moderar productos
+Administrador
+Should
+3
+RF13
+HU10
+Atender reportes
+Administrador
+Could
+3
+RF14
+HU11
+Panel de indicadores
+Administrador
+Should
+5
+RF09, RF15
+HU12
+Publicar producto
+Vendedor
+Must
+8
+RF18, RF19
+HU13
+Gestionar inventario
+Vendedor
+Must
+3
+RF20, RF21
+HU14
+Gestionar mis ventas
+Vendedor
+Must
+5
+RF22, RF39
+HU15
+Responder preguntas
+Vendedor
+Should
+2
+RF23
+HU16
+Ver mis estadísticas
+Vendedor
+Could
+3
+RF24
+HU17
+Buscar y filtrar
+Cliente
+Must
+5
+RF25, RF26, RF27
+HU18
+Ver detalle
+Cliente
+Must
+3
+RF28
+HU19
+Usar el carrito
+Cliente
+Must
+5
+RF29
+HU20
+Guardar favoritos
+Cliente
+Could
+2
+RF30
+HU21
+Pagar mi pedido
+Cliente
+Must
+8
+RF31, RF32, RF42
+HU22
+Seguir mi pedido
+Cliente
+Must
+3
+RF33, RF34
+HU23
+Calificar producto
+Cliente
+Should
+3
+RF35
+HU24
+Preguntar al vendedor
+Cliente
+Should
+2
+RF36
+HU25
+Reportar producto
+Cliente
+Could
+2
+RF37
+HU26
+Instalar la app
+Usuario
+Must
+3
+RF40
+HU27
+Usar sin conexión
+Usuario
+Should
+5
+RF41
+HU28
+Recibir notificaciones
+Usuario
+Should
+5
+RF38, RF39
+Total: 28 historias · 103 puntos de historia.
+5.2 Detalle de las historias de usuario
+HU01 · Registro de cliente
+Historia
+Como visitante, quiero registrarme con mi correo y una contraseña, para poder comprar productos y guardar mi información.
+Criterios de aceptación
+CA1. Dado que ingreso datos válidos y acepto la política de datos, cuando envío el formulario, entonces se crea mi cuenta con rol cliente y quedo autenticado.
+CA2. Si el correo ya existe, se muestra «El correo ya está registrado».
+CA3. La contraseña debe cumplir la política de seguridad (RNF05).
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF01
+HU02 · Inicio de sesión
+Historia
+Como usuario registrado, quiero iniciar sesión con correo y contraseña, para acceder a las funciones de mi rol.
+Criterios de aceptación
+CA1. Con credenciales válidas se me redirige a mi panel (admin, vendedor o catálogo).
+CA2. Con credenciales inválidas se muestra un mensaje genérico sin revelar cuál dato falló.
+CA3. Tras 5 intentos fallidos en 15 minutos se bloquea temporalmente el intento.
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF03, RF08
+HU03 · Recuperar contraseña
+Historia
+Como usuario registrado, quiero restablecer mi contraseña desde mi correo, para recuperar el acceso si la olvido.
+Criterios de aceptación
+CA1. Recibo un enlace con vigencia de 30 minutos.
+CA2. El enlace solo puede usarse una vez.
+CA3. Al cambiarla se cierran las sesiones activas.
+Prioridad / Estimación
+Should · 3 puntos · Requisitos relacionados: RF05
+HU04 · Gestionar direcciones
+Historia
+Como cliente, quiero guardar varias direcciones de envío, para no digitarlas en cada compra.
+Criterios de aceptación
+CA1. Puedo crear, editar y eliminar direcciones.
+CA2. Solo una dirección puede ser principal.
+CA3. La dirección principal se selecciona por defecto en el checkout.
+Prioridad / Estimación
+Must · 2 puntos · Requisitos relacionados: RF07
+HU05 · Abrir mi tienda
+Historia
+Como usuario, quiero solicitar convertirme en vendedor creando mi tienda, para publicar y vender mis productos.
+Criterios de aceptación
+CA1. El nombre de la tienda debe ser único.
+CA2. La tienda queda en estado «pendiente» y se me notifica.
+CA3. Cuando es aprobada, mi rol cambia a vendedor y accedo al panel de vendedor.
+Prioridad / Estimación
+Must · 5 puntos · Requisitos relacionados: RF02, RF17
+HU06 · Aprobar tiendas
+Historia
+Como administrador, quiero revisar y aprobar o rechazar solicitudes de tiendas, para garantizar vendedores confiables.
+Criterios de aceptación
+CA1. Veo el listado de tiendas pendientes con sus datos.
+CA2. Al rechazar o suspender debo escribir un motivo.
+CA3. El vendedor recibe una notificación con el resultado.
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF11
+HU07 · Gestionar categorías
+Historia
+Como administrador, quiero crear y organizar categorías y subcategorías, para que el catálogo sea fácil de navegar.
+Criterios de aceptación
+CA1. Puedo asignar una categoría padre.
+CA2. No puedo eliminar una categoría con productos asociados; solo desactivarla.
+CA3. El slug se genera automáticamente y es único.
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF12
+HU08 · Gestionar usuarios
+Historia
+Como administrador, quiero buscar usuarios y cambiar su estado o rol, para controlar el acceso a la plataforma.
+Criterios de aceptación
+CA1. Puedo filtrar por rol, estado y correo.
+CA2. Un usuario bloqueado no puede iniciar sesión.
+CA3. No puedo bloquear mi propia cuenta.
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF10
+HU09 · Moderar productos
+Historia
+Como administrador, quiero aprobar o rechazar publicaciones pendientes, para evitar productos prohibidos o fraudulentos.
+Criterios de aceptación
+CA1. Solo los productos aprobados aparecen en el catálogo.
+CA2. Al rechazar indico el motivo, que ve el vendedor.
+CA3. El vendedor puede corregir y reenviar la publicación.
+Prioridad / Estimación
+Should · 3 puntos · Requisitos relacionados: RF13
+HU10 · Atender reportes
+Historia
+Como administrador, quiero revisar las denuncias de productos, para tomar acciones sobre publicaciones indebidas.
+Criterios de aceptación
+CA1. Veo los reportes ordenados por fecha y estado.
+CA2. Puedo pausar el producto desde el reporte.
+CA3. Registro la resolución y la fecha de cierre.
+Prioridad / Estimación
+Could · 3 puntos · Requisitos relacionados: RF14
+HU11 · Panel de indicadores
+Historia
+Como administrador, quiero ver métricas generales de la plataforma, para tomar decisiones informadas.
+Criterios de aceptación
+CA1. Veo ventas del mes, pedidos por estado, usuarios nuevos y pendientes de aprobación.
+CA2. Puedo filtrar por rango de fechas.
+CA3. Los datos se cargan en menos de 2 segundos.
+Prioridad / Estimación
+Should · 5 puntos · Requisitos relacionados: RF09, RF15
+HU12 · Publicar producto
+Historia
+Como vendedor, quiero publicar un producto con fotos, precio y stock, para ofrecerlo a los clientes.
+Criterios de aceptación
+CA1. Nombre, categoría, precio y stock son obligatorios.
+CA2. Puedo subir hasta 6 imágenes y elegir la principal.
+CA3. El precio de oferta debe ser menor que el precio normal.
+CA4. El producto queda «pendiente» hasta su aprobación.
+Prioridad / Estimación
+Must · 8 puntos · Requisitos relacionados: RF18, RF19
+HU13 · Gestionar inventario
+Historia
+Como vendedor, quiero actualizar el stock y pausar productos, para no vender lo que no tengo.
+Criterios de aceptación
+CA1. Recibo alerta cuando el stock es ≤ 3.
+CA2. Un producto con stock 0 aparece como «Agotado» y no se puede agregar al carrito.
+CA3. Puedo pausar y reactivar la publicación.
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF20, RF21
+HU14 · Gestionar mis ventas
+Historia
+Como vendedor, quiero ver los pedidos de mis productos y actualizar su estado, para cumplir con los envíos.
+Criterios de aceptación
+CA1. Solo veo los ítems que pertenecen a mi tienda.
+CA2. Para marcar «enviado» debo registrar el número de guía.
+CA3. El cliente recibe notificación push de cada cambio.
+Prioridad / Estimación
+Must · 5 puntos · Requisitos relacionados: RF22, RF39
+HU15 · Responder preguntas
+Historia
+Como vendedor, quiero responder las preguntas de mis productos, para resolver dudas y cerrar ventas.
+Criterios de aceptación
+CA1. Veo las preguntas sin responder primero.
+CA2. La respuesta queda pública en la ficha del producto.
+CA3. El cliente recibe una notificación.
+Prioridad / Estimación
+Should · 2 puntos · Requisitos relacionados: RF23
+HU16 · Ver mis estadísticas
+Historia
+Como vendedor, quiero consultar mis ingresos y productos más vendidos, para evaluar el desempeño de mi tienda.
+Criterios de aceptación
+CA1. Veo ingresos y unidades por período.
+CA2. Veo el top 5 de productos.
+CA3. Los ítems cancelados no se suman.
+Prioridad / Estimación
+Could · 3 puntos · Requisitos relacionados: RF24
+HU17 · Buscar y filtrar
+Historia
+Como cliente, quiero buscar productos y aplicar filtros, para encontrar rápido lo que necesito.
+Criterios de aceptación
+CA1. La búsqueda consulta nombre y descripción.
+CA2. Puedo combinar filtros de categoría, precio, condición y municipio.
+CA3. Los resultados se paginan y pueden ordenarse.
+Prioridad / Estimación
+Must · 5 puntos · Requisitos relacionados: RF25, RF26, RF27
+HU18 · Ver detalle
+Historia
+Como cliente, quiero ver toda la información de un producto, para decidir si lo compro.
+Criterios de aceptación
+CA1. Veo galería, precio, oferta, stock, tienda, reseñas y preguntas.
+CA2. Si hay oferta se muestra el porcentaje de descuento.
+CA3. Puedo compartir el enlace del producto.
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF28
+HU19 · Usar el carrito
+Historia
+Como cliente, quiero agregar productos al carrito y modificar cantidades, para comprar varios productos a la vez.
+Criterios de aceptación
+CA1. No puedo superar el stock disponible.
+CA2. El total se recalcula al cambiar cantidades.
+CA3. El carrito se conserva al cerrar sesión y en otros dispositivos.
+Prioridad / Estimación
+Must · 5 puntos · Requisitos relacionados: RF29
+HU20 · Guardar favoritos
+Historia
+Como cliente, quiero marcar productos como favoritos, para encontrarlos después.
+Criterios de aceptación
+CA1. El ícono de corazón cambia de estado al marcar.
+CA2. Veo mis favoritos en una lista.
+CA3. Si un favorito se agota se indica en la lista.
+Prioridad / Estimación
+Could · 2 puntos · Requisitos relacionados: RF30
+HU21 · Pagar mi pedido
+Historia
+Como cliente, quiero confirmar mi compra y pagar en línea o contraentrega, para recibir mis productos.
+Criterios de aceptación
+CA1. Selecciono dirección y método de pago y veo el resumen antes de confirmar.
+CA2. Si algún producto no tiene stock suficiente, se me informa y no se crea el pedido.
+CA3. Al aprobarse el pago, el pedido pasa a «pagado» y recibo correo de confirmación.
+Prioridad / Estimación
+Must · 8 puntos · Requisitos relacionados: RF31, RF32, RF42
+HU22 · Seguir mi pedido
+Historia
+Como cliente, quiero consultar el estado de mis pedidos y cancelarlos si aún no se envían, para saber cuándo llegan.
+Criterios de aceptación
+CA1. Veo el estado por ítem y el número de guía.
+CA2. Puedo cancelar solo si ningún ítem fue enviado.
+CA3. Al cancelar se repone el stock.
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF33, RF34
+HU23 · Calificar producto
+Historia
+Como cliente, quiero calificar y comentar un producto que recibí, para ayudar a otros compradores.
+Criterios de aceptación
+CA1. Solo puedo reseñar ítems entregados.
+CA2. Solo una reseña por ítem comprado.
+CA3. La calificación promedio del producto se actualiza.
+Prioridad / Estimación
+Should · 3 puntos · Requisitos relacionados: RF35
+HU24 · Preguntar al vendedor
+Historia
+Como cliente, quiero hacer preguntas sobre un producto, para resolver mis dudas antes de comprar.
+Criterios de aceptación
+CA1. La pregunta tiene máximo 500 caracteres.
+CA2. Recibo notificación cuando me responden.
+Prioridad / Estimación
+Should · 2 puntos · Requisitos relacionados: RF36
+HU25 · Reportar producto
+Historia
+Como cliente, quiero denunciar una publicación sospechosa, para mantener la plataforma segura.
+Criterios de aceptación
+CA1. Selecciono un motivo y opcionalmente una descripción.
+CA2. El administrador recibe el reporte en su bandeja.
+Prioridad / Estimación
+Could · 2 puntos · Requisitos relacionados: RF37
+HU26 · Instalar la app
+Historia
+Como usuario, quiero instalar MercaYa en mi celular o computador, para abrirla como una app nativa.
+Criterios de aceptación
+CA1. En Android/escritorio aparece el botón «Instalar app».
+CA2. En iOS se muestran instrucciones «Compartir → Agregar a inicio».
+CA3. La app abre en modo standalone con ícono y splash propios.
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF40
+HU27 · Usar sin conexión
+Historia
+Como usuario, quiero consultar productos vistos aunque no tenga internet, para no perder la experiencia con mala señal.
+Criterios de aceptación
+CA1. Sin conexión se muestra un aviso visible.
+CA2. Las páginas visitadas cargan desde caché.
+CA3. Las acciones de compra se deshabilitan hasta recuperar la conexión.
+Prioridad / Estimación
+Should · 5 puntos · Requisitos relacionados: RF41
+HU28 · Recibir notificaciones
+Historia
+Como usuario, quiero recibir notificaciones push y en la bandeja de la app, para enterarme de novedades de mis pedidos o ventas.
+Criterios de aceptación
+CA1. La app solicita permiso en un momento contextual, no al abrirla.
+CA2. Puedo desactivar las notificaciones desde mi perfil.
+CA3. Al tocar la notificación se abre la pantalla relacionada.
+Prioridad / Estimación
+Should · 5 puntos · Requisitos relacionados: RF38, RF39
+6. Modelo entidad-relación
+El modelo de datos se diseñó a partir de los requisitos funcionales, identificando entidades, atributos, claves y cardinalidades (Elmasri & Navathe, 2016). Está normalizado hasta la tercera forma normal (3FN), con desnormalizaciones controladas y justificadas: la copia de la dirección y del nombre del producto en pedidos y detalle_pedido conserva el histórico aunque los datos originales cambien, y el campo calificacion_promedio evita recalcular promedios en cada consulta del catálogo.
+6.1 Decisiones de diseño relevantes
+Pedidos multivendedor: un pedido puede incluir productos de varias tiendas; por eso el estado de envío y la guía se manejan por ítem en detalle_pedido, y cada vendedor solo gestiona sus ítems.
+Vendedor como tienda: la tienda es una entidad 1:1 con el usuario vendedor, con flujo de aprobación (pendiente, aprobada, rechazada, suspendida) auditado por el administrador.
+Categorías jerárquicas: autorrelación padre_id que permite categorías y subcategorías sin tablas adicionales.
+Reseñas verificadas: cada reseña se vincula 1:1 con un ítem de pedido, lo que garantiza que solo opine quien compró y evita duplicados.
+Relaciones N:M: favoritos (usuarios-productos) y carrito_items (carritos-productos) se resuelven con entidades asociativas.
+PWA: suscripciones_push almacena las claves Web Push de cada dispositivo y notificaciones sirve como bandeja persistente.
+6.2 Diccionario de entidades
+Entidad
+Descripción
+Relaciones
+roles
+Catálogo de roles del sistema: administrador, vendedor y cliente.
+1:N con usuarios
+usuarios
+Personas registradas; almacena credenciales (hash bcrypt), datos personales y estado.
+N:1 roles; 1:N direcciones, pedidos, reseñas, preguntas, notificaciones; 1:1 tiendas; 1:1 carritos
+direcciones
+Direcciones de envío de cada usuario.
+N:1 usuarios; 1:N pedidos
+tiendas
+Perfil comercial de un vendedor; requiere aprobación del administrador.
+1:1 usuarios (dueño); N:1 usuarios (admin que aprueba); 1:N productos; 1:N detalle_pedido
+categorias
+Clasificación jerárquica de productos (autorrelación padre-hijo).
+1:N categorias (subcategorías); 1:N productos
+productos
+Artículos publicados por una tienda, con precio, stock, condición y estado de moderación.
+N:1 tiendas; N:1 categorias; 1:N imágenes, reseñas, preguntas, reportes
+producto_imagenes
+URLs de las imágenes de cada producto, con orden e imagen principal.
+N:1 productos
+carritos
+Carrito persistente de cada usuario.
+1:1 usuarios; 1:N carrito_items
+carrito_items
+Productos y cantidades dentro de un carrito (entidad asociativa).
+N:1 carritos; N:1 productos
+favoritos
+Relación N:M entre usuarios y productos (lista de deseos).
+N:1 usuarios; N:1 productos
+pedidos
+Orden de compra del cliente; guarda copia de la dirección y totales.
+N:1 usuarios; N:1 direcciones; 1:N detalle_pedido; 1:N pagos
+detalle_pedido
+Ítems del pedido; cada ítem pertenece a una tienda y tiene su propio estado de envío.
+N:1 pedidos; N:1 productos; N:1 tiendas; 1:1 reseñas
+pagos
+Transacciones de pago asociadas al pedido (pasarela o contraentrega).
+N:1 pedidos
+resenas
+Calificación (1-5) y comentario de un cliente sobre un ítem comprado y entregado.
+N:1 productos; N:1 usuarios; 1:1 detalle_pedido
+preguntas_producto
+Preguntas públicas de clientes y respuestas del vendedor.
+N:1 productos; N:1 usuarios
+notificaciones
+Bandeja de notificaciones dentro de la aplicación.
+N:1 usuarios
+suscripciones_push
+Suscripciones Web Push de los dispositivos (endpoint y claves p256dh/auth).
+N:1 usuarios
+reportes
+Denuncias de productos y su gestión por el administrador.
+N:1 productos; N:1 usuarios (reportante); N:1 usuarios (admin)
+6.3 Diagrama entidad-relación
+El diagrama utiliza la notación de pata de gallo (crow's foot): dos barras indican «uno y solo uno», el círculo con pata de gallo indica «cero o muchos» y el círculo con barra «cero o uno». Las tablas se agrupan en tres módulos: usuarios y acceso (índigo), catálogo e interacción (violeta) y compras (naranja). PK = clave primaria; FK = clave foránea.
+Figura 3. Modelo entidad-relación de MercaYa (18 entidades). Ver mercaya-MER.png o .svg en alta resolución.
+7. Script de la base de datos (MySQL · Clever Cloud)
+El script mercaya_db.sql crea las 18 tablas con motor InnoDB y juego de caracteres utf8mb4 (soporte de tildes, ñ y emojis), claves primarias y foráneas con reglas ON DELETE/ON UPDATE, restricciones CHECK (MySQL 8.0.16 o superior), índices de búsqueda (incluido un índice FULLTEXT), dos vistas de apoyo (v_catalogo y v_ventas_por_tienda) y datos iniciales. El script fue ejecutado y validado sin errores en MySQL 8.0.
+7.1 Pasos para ejecutarlo en Clever Cloud
+En la consola de Clever Cloud, crear el add-on MySQL y seleccionar el plan y la región.
+Copiar las credenciales de la pestaña de información del add-on (host, puerto, base de datos, usuario y contraseña). La base de datos ya viene creada, por lo que el script no incluye CREATE DATABASE.
+Conectarse con phpMyAdmin (enlace del add-on), MySQL Workbench o la terminal: mysql -h HOST -P PUERTO -u USUARIO -p BASE < mercaya_db.sql
+Verificar con SHOW TABLES; que existan las 18 tablas y 2 vistas.
+Usuarios de prueba (contraseña MercaYa2026*): admin@mercaya.com, vendedor@mercaya.com y cliente@mercaya.com. Cambiarla antes de producción.
+7.2 Conexión desde Express
+Clever Cloud expone las variables de entorno MYSQL_ADDON_HOST, MYSQL_ADDON_PORT, MYSQL_ADDON_DB, MYSQL_ADDON_USER y MYSQL_ADDON_PASSWORD cuando el add-on está vinculado a la aplicación Node.js. Se recomienda un pool de conexiones con límite bajo, acorde con el plan:
+// src/infrastructure/db/pool.js
+import mysql from 'mysql2/promise';
+export const pool = mysql.createPool({
+host: process.env.MYSQL_ADDON_HOST,
+port: Number(process.env.MYSQL_ADDON_PORT),
+database: process.env.MYSQL_ADDON_DB,
+user: process.env.MYSQL_ADDON_USER,
+password: process.env.MYSQL_ADDON_PASSWORD,
+waitForConnections: true,
+connectionLimit: 4,      // ajustar al máximo de conexiones del plan
+charset: 'utf8mb4',
+timezone: '-05:00'       // America/Bogota
+});
+7.3 Script completo
+A continuación se incluye el script completo; también se entrega como archivo independiente mercaya_db.sql para ejecutarlo directamente.
+-- =====================================================================
+--  MercaYa - PWA de compra y venta de productos varios
+--  Script de base de datos (MySQL 8.x - Clever Cloud)
+--  Autora: Liseth Arelis Giraldo Morales
+--  Fecha: 2026-09-24
+--
+--  NOTAS PARA CLEVER CLOUD
+--  * Clever Cloud crea la base de datos por ti (nombre tipo "bxxxxxxxxx").
+--    NO ejecutes CREATE DATABASE: conéctate a esa base y ejecuta este script
+--    (desde phpMyAdmin del add-on, MySQL Workbench o la CLI de mysql).
+--  * Si trabajas en local, descomenta las dos líneas siguientes.
+-- =====================================================================
+-- CREATE DATABASE IF NOT EXISTS mercaya CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- USE mercaya;
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS reportes;
+DROP TABLE IF EXISTS suscripciones_push;
+DROP TABLE IF EXISTS notificaciones;
+DROP TABLE IF EXISTS preguntas_producto;
+DROP TABLE IF EXISTS resenas;
+DROP TABLE IF EXISTS pagos;
+DROP TABLE IF EXISTS detalle_pedido;
+DROP TABLE IF EXISTS pedidos;
+DROP TABLE IF EXISTS favoritos;
+DROP TABLE IF EXISTS carrito_items;
+DROP TABLE IF EXISTS carritos;
+DROP TABLE IF EXISTS producto_imagenes;
+DROP TABLE IF EXISTS productos;
+DROP TABLE IF EXISTS categorias;
+DROP TABLE IF EXISTS tiendas;
+DROP TABLE IF EXISTS direcciones;
+DROP TABLE IF EXISTS usuarios;
+DROP TABLE IF EXISTS roles;
+SET FOREIGN_KEY_CHECKS = 1;
+-- ---------------------------------------------------------------------
+-- 1. ROLES (administrador, vendedor, cliente)
+-- ---------------------------------------------------------------------
+CREATE TABLE roles (
+id            TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+nombre        VARCHAR(30)  NOT NULL,
+descripcion   VARCHAR(150) NULL,
+PRIMARY KEY (id),
+UNIQUE KEY uq_roles_nombre (nombre)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ---------------------------------------------------------------------
+-- 2. USUARIOS
+-- ---------------------------------------------------------------------
+CREATE TABLE usuarios (
+id                 INT UNSIGNED NOT NULL AUTO_INCREMENT,
+rol_id             TINYINT UNSIGNED NOT NULL,
+nombres            VARCHAR(80)  NOT NULL,
+apellidos          VARCHAR(80)  NOT NULL,
+tipo_documento     ENUM('CC','CE','TI','PASAPORTE','NIT') NULL,
+numero_documento   VARCHAR(20)  NULL,
+email              VARCHAR(120) NOT NULL,
+password_hash      VARCHAR(255) NOT NULL,          -- bcrypt
+telefono           VARCHAR(20)  NULL,
+avatar_url         VARCHAR(255) NULL,
+email_verificado   TINYINT(1)   NOT NULL DEFAULT 0,
+estado             ENUM('activo','inactivo','bloqueado') NOT NULL DEFAULT 'activo',
+ultimo_acceso      DATETIME     NULL,
+created_at         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+updated_at         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+PRIMARY KEY (id),
+UNIQUE KEY uq_usuarios_email (email),
+UNIQUE KEY uq_usuarios_documento (tipo_documento, numero_documento),
+KEY idx_usuarios_rol (rol_id),
+CONSTRAINT fk_usuarios_rol FOREIGN KEY (rol_id) REFERENCES roles (id)
+ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ---------------------------------------------------------------------
+-- 3. DIRECCIONES (un usuario puede tener varias direcciones de envío)
+-- ---------------------------------------------------------------------
+CREATE TABLE direcciones (
+id             INT UNSIGNED NOT NULL AUTO_INCREMENT,
+usuario_id     INT UNSIGNED NOT NULL,
+alias          VARCHAR(40)  NOT NULL DEFAULT 'Casa',
+departamento   VARCHAR(60)  NOT NULL,
+municipio      VARCHAR(60)  NOT NULL,
+barrio         VARCHAR(80)  NULL,
+direccion      VARCHAR(150) NOT NULL,
+referencia     VARCHAR(150) NULL,
+es_principal   TINYINT(1)   NOT NULL DEFAULT 0,
+created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+PRIMARY KEY (id),
+KEY idx_direcciones_usuario (usuario_id),
+CONSTRAINT fk_direcciones_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
+ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ---------------------------------------------------------------------
+-- 4. TIENDAS (perfil comercial del vendedor, 1 a 1 con usuario)
+-- ---------------------------------------------------------------------
+CREATE TABLE tiendas (
+id                     INT UNSIGNED NOT NULL AUTO_INCREMENT,
+usuario_id             INT UNSIGNED NOT NULL,
+nombre                 VARCHAR(100) NOT NULL,
+slug                   VARCHAR(120) NOT NULL,
+descripcion            TEXT         NULL,
+logo_url               VARCHAR(255) NULL,
+telefono_contacto      VARCHAR(20)  NULL,
+municipio              VARCHAR(60)  NULL,
+estado                 ENUM('pendiente','aprobada','rechazada','suspendida') NOT NULL DEFAULT 'pendiente',
+motivo_estado          VARCHAR(255) NULL,
+calificacion_promedio  DECIMAL(3,2) NOT NULL DEFAULT 0.00,
+aprobada_por           INT UNSIGNED NULL,             -- administrador que aprobó
+aprobada_en            DATETIME     NULL,
+created_at             DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+updated_at             DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+PRIMARY KEY (id),
+UNIQUE KEY uq_tiendas_usuario (usuario_id),
+UNIQUE KEY uq_tiendas_slug (slug),
+KEY idx_tiendas_estado (estado),
+CONSTRAINT fk_tiendas_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
+ON UPDATE CASCADE ON DELETE CASCADE,
+CONSTRAINT fk_tiendas_admin FOREIGN KEY (aprobada_por) REFERENCES usuarios (id)
+ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ---------------------------------------------------------------------
+-- 5. CATEGORIAS (jerárquicas: categoría / subcategoría)
+-- ---------------------------------------------------------------------
+CREATE TABLE categorias (
+id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+padre_id     INT UNSIGNED NULL,
+nombre       VARCHAR(80)  NOT NULL,
+slug         VARCHAR(100) NOT NULL,
+descripcion  VARCHAR(255) NULL,
+icono        VARCHAR(60)  NULL,
+activa       TINYINT(1)   NOT NULL DEFAULT 1,
+created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+PRIMARY KEY (id),
+UNIQUE KEY uq_categorias_slug (slug),
+KEY idx_categorias_padre (padre_id),
+CONSTRAINT fk_categorias_padre FOREIGN KEY (padre_id) REFERENCES categorias (id)
+ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ---------------------------------------------------------------------
+-- 6. PRODUCTOS
+-- ---------------------------------------------------------------------
+CREATE TABLE productos (
+id              INT UNSIGNED NOT NULL AUTO_INCREMENT,
+tienda_id       INT UNSIGNED NOT NULL,
+categoria_id    INT UNSIGNED NOT NULL,
+nombre          VARCHAR(150) NOT NULL,
+slug            VARCHAR(170) NOT NULL,
+descripcion     TEXT         NULL,
+precio          DECIMAL(12,2) NOT NULL,
+precio_oferta   DECIMAL(12,2) NULL,
+stock           INT UNSIGNED NOT NULL DEFAULT 0,
+sku             VARCHAR(50)  NULL,
+condicion       ENUM('nuevo','usado','reacondicionado') NOT NULL DEFAULT 'nuevo',
+estado          ENUM('borrador','pendiente','publicado','pausado','rechazado') NOT NULL DEFAULT 'pendiente',
+motivo_rechazo  VARCHAR(255) NULL,
+vistas          INT UNSIGNED NOT NULL DEFAULT 0,
+calificacion_promedio DECIMAL(3,2) NOT NULL DEFAULT 0.00,
+created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+updated_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+PRIMARY KEY (id),
+UNIQUE KEY uq_productos_slug (slug),
+UNIQUE KEY uq_productos_tienda_sku (tienda_id, sku),
+KEY idx_productos_categoria (categoria_id),
+KEY idx_productos_estado_precio (estado, precio),
+FULLTEXT KEY ft_productos_busqueda (nombre, descripcion),
+CONSTRAINT chk_productos_precio CHECK (precio >= 0),
+CONSTRAINT chk_productos_oferta CHECK (precio_oferta IS NULL OR (precio_oferta >= 0 AND precio_oferta < precio)),
+CONSTRAINT fk_productos_tienda FOREIGN KEY (tienda_id) REFERENCES tiendas (id)
+ON UPDATE CASCADE ON DELETE CASCADE,
+CONSTRAINT fk_productos_categoria FOREIGN KEY (categoria_id) REFERENCES categorias (id)
+ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ---------------------------------------------------------------------
+-- 7. IMÁGENES DE PRODUCTO (URLs en Cloudinary / Cellar S3 de Clever Cloud)
+-- ---------------------------------------------------------------------
+CREATE TABLE producto_imagenes (
+id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+producto_id   INT UNSIGNED NOT NULL,
+url           VARCHAR(255) NOT NULL,
+orden         TINYINT UNSIGNED NOT NULL DEFAULT 0,
+es_principal  TINYINT(1)   NOT NULL DEFAULT 0,
+PRIMARY KEY (id),
+KEY idx_imagenes_producto (producto_id),
+CONSTRAINT fk_imagenes_producto FOREIGN KEY (producto_id) REFERENCES productos (id)
+ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ---------------------------------------------------------------------
+-- 8. CARRITOS y 9. CARRITO_ITEMS
+-- ---------------------------------------------------------------------
+CREATE TABLE carritos (
+id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+usuario_id   INT UNSIGNED NOT NULL,
+created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+PRIMARY KEY (id),
+UNIQUE KEY uq_carritos_usuario (usuario_id),
+CONSTRAINT fk_carritos_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
+ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE carrito_items (
+id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+carrito_id    INT UNSIGNED NOT NULL,
+producto_id   INT UNSIGNED NOT NULL,
+cantidad      SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+agregado_en   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+PRIMARY KEY (id),
+UNIQUE KEY uq_carrito_producto (carrito_id, producto_id),
+KEY idx_carrito_items_producto (producto_id),
+CONSTRAINT chk_carrito_cantidad CHECK (cantidad > 0),
+CONSTRAINT fk_items_carrito FOREIGN KEY (carrito_id) REFERENCES carritos (id)
+ON UPDATE CASCADE ON DELETE CASCADE,
+CONSTRAINT fk_items_producto FOREIGN KEY (producto_id) REFERENCES productos (id)
+ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ---------------------------------------------------------------------
+-- 10. FAVORITOS (lista de deseos)
+-- ---------------------------------------------------------------------
+CREATE TABLE favoritos (
+usuario_id    INT UNSIGNED NOT NULL,
+producto_id   INT UNSIGNED NOT NULL,
+created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+PRIMARY KEY (usuario_id, producto_id),
+KEY idx_favoritos_producto (producto_id),
+CONSTRAINT fk_favoritos_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
+ON UPDATE CASCADE ON DELETE CASCADE,
+CONSTRAINT fk_favoritos_producto FOREIGN KEY (producto_id) REFERENCES productos (id)
+ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ---------------------------------------------------------------------
+-- 11. PEDIDOS (la dirección se copia para conservar el histórico)
+-- ---------------------------------------------------------------------
+CREATE TABLE pedidos (
+id                 INT UNSIGNED NOT NULL AUTO_INCREMENT,
+codigo             VARCHAR(20)  NOT NULL,              -- ej. MY-2026-000123
+cliente_id         INT UNSIGNED NOT NULL,
+direccion_id       INT UNSIGNED NULL,
+direccion_envio    VARCHAR(255) NOT NULL,              -- copia textual
+municipio_envio    VARCHAR(60)  NOT NULL,
+telefono_contacto  VARCHAR(20)  NOT NULL,
+subtotal           DECIMAL(12,2) NOT NULL,
+costo_envio        DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+descuento          DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+total              DECIMAL(12,2) NOT NULL,
+estado             ENUM('pendiente_pago','pagado','en_preparacion','enviado','entregado','cancelado')
+NOT NULL DEFAULT 'pendiente_pago',
+notas              VARCHAR(255) NULL,
+created_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+updated_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+PRIMARY KEY (id),
+UNIQUE KEY uq_pedidos_codigo (codigo),
+KEY idx_pedidos_cliente_fecha (cliente_id, created_at),
+KEY idx_pedidos_estado (estado),
+CONSTRAINT chk_pedidos_total CHECK (total >= 0),
+CONSTRAINT fk_pedidos_cliente FOREIGN KEY (cliente_id) REFERENCES usuarios (id)
+ON UPDATE CASCADE ON DELETE RESTRICT,
+CONSTRAINT fk_pedidos_direccion FOREIGN KEY (direccion_id) REFERENCES direcciones (id)
+ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ---------------------------------------------------------------------
+-- 12. DETALLE_PEDIDO (un pedido puede incluir productos de varias tiendas)
+-- ---------------------------------------------------------------------
+CREATE TABLE detalle_pedido (
+id                INT UNSIGNED NOT NULL AUTO_INCREMENT,
+pedido_id         INT UNSIGNED NOT NULL,
+producto_id       INT UNSIGNED NULL,
+tienda_id         INT UNSIGNED NOT NULL,
+nombre_producto   VARCHAR(150) NOT NULL,              -- copia histórica
+cantidad          SMALLINT UNSIGNED NOT NULL,
+precio_unitario   DECIMAL(12,2) NOT NULL,
+subtotal          DECIMAL(12,2) NOT NULL,
+estado_item       ENUM('pendiente','en_preparacion','enviado','entregado','cancelado')
+NOT NULL DEFAULT 'pendiente',
+guia_envio        VARCHAR(60)  NULL,
+updated_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+PRIMARY KEY (id),
+KEY idx_detalle_pedido (pedido_id),
+KEY idx_detalle_tienda_estado (tienda_id, estado_item),
+KEY idx_detalle_producto (producto_id),
+CONSTRAINT chk_detalle_cantidad CHECK (cantidad > 0),
+CONSTRAINT fk_detalle_pedido FOREIGN KEY (pedido_id) REFERENCES pedidos (id)
+ON UPDATE CASCADE ON DELETE CASCADE,
+CONSTRAINT fk_detalle_producto FOREIGN KEY (producto_id) REFERENCES productos (id)
+ON UPDATE CASCADE ON DELETE SET NULL,
+CONSTRAINT fk_detalle_tienda FOREIGN KEY (tienda_id) REFERENCES tiendas (id)
+ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ---------------------------------------------------------------------
+-- 13. PAGOS
+-- ---------------------------------------------------------------------
+CREATE TABLE pagos (
+id                   INT UNSIGNED NOT NULL AUTO_INCREMENT,
+pedido_id            INT UNSIGNED NOT NULL,
+metodo               ENUM('tarjeta','pse','nequi','daviplata','contraentrega','transferencia') NOT NULL,
+proveedor            VARCHAR(40)  NULL,               -- ej. Wompi, Mercado Pago
+referencia_externa   VARCHAR(100) NULL,
+monto                DECIMAL(12,2) NOT NULL,
+estado               ENUM('pendiente','aprobado','rechazado','reembolsado') NOT NULL DEFAULT 'pendiente',
+respuesta_pasarela   JSON         NULL,
+pagado_en            DATETIME     NULL,
+created_at           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+PRIMARY KEY (id),
+UNIQUE KEY uq_pagos_referencia (referencia_externa),
+KEY idx_pagos_pedido (pedido_id),
+CONSTRAINT fk_pagos_pedido FOREIGN KEY (pedido_id) REFERENCES pedidos (id)
+ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ---------------------------------------------------------------------
+-- 14. RESEÑAS (solo sobre productos comprados y entregados)
+-- ---------------------------------------------------------------------
+CREATE TABLE resenas (
+id                 INT UNSIGNED NOT NULL AUTO_INCREMENT,
+producto_id        INT UNSIGNED NOT NULL,
+cliente_id         INT UNSIGNED NOT NULL,
+detalle_pedido_id  INT UNSIGNED NOT NULL,
+calificacion       TINYINT UNSIGNED NOT NULL,
+comentario         VARCHAR(500) NULL,
+visible            TINYINT(1)   NOT NULL DEFAULT 1,
+created_at         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+PRIMARY KEY (id),
+UNIQUE KEY uq_resenas_detalle (detalle_pedido_id),     -- 1 reseña por ítem comprado
+KEY idx_resenas_producto (producto_id),
+KEY idx_resenas_cliente (cliente_id),
+CONSTRAINT chk_resenas_calificacion CHECK (calificacion BETWEEN 1 AND 5),
+CONSTRAINT fk_resenas_producto FOREIGN KEY (producto_id) REFERENCES productos (id)
+ON UPDATE CASCADE ON DELETE CASCADE,
+CONSTRAINT fk_resenas_cliente FOREIGN KEY (cliente_id) REFERENCES usuarios (id)
+ON UPDATE CASCADE ON DELETE CASCADE,
+CONSTRAINT fk_resenas_detalle FOREIGN KEY (detalle_pedido_id) REFERENCES detalle_pedido (id)
+ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ---------------------------------------------------------------------
+-- 15. PREGUNTAS DE PRODUCTO (cliente pregunta, vendedor responde)
+-- ---------------------------------------------------------------------
+CREATE TABLE preguntas_producto (
+id               INT UNSIGNED NOT NULL AUTO_INCREMENT,
+producto_id      INT UNSIGNED NOT NULL,
+cliente_id       INT UNSIGNED NOT NULL,
+pregunta         VARCHAR(500) NOT NULL,
+respuesta        VARCHAR(500) NULL,
+respondida_en    DATETIME     NULL,
+created_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+PRIMARY KEY (id),
+KEY idx_preguntas_producto (producto_id),
+KEY idx_preguntas_cliente (cliente_id),
+CONSTRAINT fk_preguntas_producto FOREIGN KEY (producto_id) REFERENCES productos (id)
+ON UPDATE CASCADE ON DELETE CASCADE,
+CONSTRAINT fk_preguntas_cliente FOREIGN KEY (cliente_id) REFERENCES usuarios (id)
+ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ---------------------------------------------------------------------
+-- 16. NOTIFICACIONES (bandeja dentro de la app)
+-- ---------------------------------------------------------------------
+CREATE TABLE notificaciones (
+id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+usuario_id   INT UNSIGNED NOT NULL,
+tipo         ENUM('pedido','pago','producto','pregunta','tienda','sistema') NOT NULL DEFAULT 'sistema',
+titulo       VARCHAR(120) NOT NULL,
+mensaje      VARCHAR(255) NOT NULL,
+url_destino  VARCHAR(255) NULL,
+leida        TINYINT(1)   NOT NULL DEFAULT 0,
+created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+PRIMARY KEY (id),
+KEY idx_notificaciones_usuario_leida (usuario_id, leida),
+CONSTRAINT fk_notificaciones_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
+ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ---------------------------------------------------------------------
+-- 17. SUSCRIPCIONES PUSH (Web Push de la PWA - librería web-push)
+-- ---------------------------------------------------------------------
+CREATE TABLE suscripciones_push (
+id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+usuario_id   INT UNSIGNED NOT NULL,
+endpoint     VARCHAR(500) NOT NULL,
+p256dh       VARCHAR(255) NOT NULL,
+auth         VARCHAR(100) NOT NULL,
+dispositivo  VARCHAR(120) NULL,
+created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+PRIMARY KEY (id),
+UNIQUE KEY uq_push_endpoint (endpoint(255)),
+KEY idx_push_usuario (usuario_id),
+CONSTRAINT fk_push_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
+ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ---------------------------------------------------------------------
+-- 18. REPORTES (denuncias de productos, moderadas por el administrador)
+-- ---------------------------------------------------------------------
+CREATE TABLE reportes (
+id              INT UNSIGNED NOT NULL AUTO_INCREMENT,
+reportante_id   INT UNSIGNED NOT NULL,
+producto_id     INT UNSIGNED NOT NULL,
+motivo          ENUM('fraude','prohibido','contenido_inapropiado','informacion_falsa','otro') NOT NULL,
+descripcion     VARCHAR(500) NULL,
+estado          ENUM('abierto','en_revision','resuelto','descartado') NOT NULL DEFAULT 'abierto',
+admin_id        INT UNSIGNED NULL,
+resolucion      VARCHAR(255) NULL,
+created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+resuelto_en     DATETIME     NULL,
+PRIMARY KEY (id),
+KEY idx_reportes_estado (estado),
+KEY idx_reportes_producto (producto_id),
+CONSTRAINT fk_reportes_reportante FOREIGN KEY (reportante_id) REFERENCES usuarios (id)
+ON UPDATE CASCADE ON DELETE CASCADE,
+CONSTRAINT fk_reportes_producto FOREIGN KEY (producto_id) REFERENCES productos (id)
+ON UPDATE CASCADE ON DELETE CASCADE,
+CONSTRAINT fk_reportes_admin FOREIGN KEY (admin_id) REFERENCES usuarios (id)
+ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- =====================================================================
+-- VISTAS DE APOYO
+-- =====================================================================
+CREATE OR REPLACE VIEW v_catalogo AS
+SELECT p.id, p.nombre, p.slug, p.precio, p.precio_oferta,
+COALESCE(p.precio_oferta, p.precio) AS precio_final,
+p.stock, p.condicion, p.calificacion_promedio,
+c.id AS categoria_id, c.nombre AS categoria,
+t.id AS tienda_id, t.nombre AS tienda, t.municipio,
+(SELECT i.url FROM producto_imagenes i
+WHERE i.producto_id = p.id
+ORDER BY i.es_principal DESC, i.orden ASC LIMIT 1) AS imagen,
+p.created_at
+FROM productos p
+JOIN categorias c ON c.id = p.categoria_id
+JOIN tiendas    t ON t.id = p.tienda_id
+WHERE p.estado = 'publicado' AND t.estado = 'aprobada' AND c.activa = 1;
+CREATE OR REPLACE VIEW v_ventas_por_tienda AS
+SELECT t.id AS tienda_id, t.nombre AS tienda,
+COUNT(DISTINCT d.pedido_id)  AS pedidos,
+COALESCE(SUM(d.cantidad), 0) AS unidades_vendidas,
+COALESCE(SUM(d.subtotal), 0) AS total_vendido
+FROM tiendas t
+LEFT JOIN detalle_pedido d ON d.tienda_id = t.id AND d.estado_item <> 'cancelado'
+GROUP BY t.id, t.nombre;
+-- =====================================================================
+-- DATOS INICIALES (SEED)
+-- =====================================================================
+INSERT INTO roles (id, nombre, descripcion) VALUES
+(1, 'administrador', 'Gestiona usuarios, tiendas, categorías, moderación y reportes'),
+(2, 'vendedor',      'Publica productos y gestiona sus ventas'),
+(3, 'cliente',       'Explora, compra y califica productos');
+-- Contraseña de todos los usuarios de prueba: MercaYa2026*
+-- (hash bcrypt con 10 rondas; cámbiala después del primer ingreso)
+INSERT INTO usuarios (id, rol_id, nombres, apellidos, tipo_documento, numero_documento, email, password_hash, telefono, email_verificado) VALUES
+(1, 1, 'Admin',  'MercaYa', 'CC', '1000000001', 'admin@mercaya.com',    '$2b$10$lniMIU9g8.syYfPDESFysevNet2Q0eVkvUjJXybr/pgDLpoFrB77u', '3000000001', 1),
+(2, 2, 'Laura',  'Gómez',   'CC', '1000000002', 'vendedor@mercaya.com', '$2b$10$lniMIU9g8.syYfPDESFysevNet2Q0eVkvUjJXybr/pgDLpoFrB77u', '3000000002', 1),
+(3, 3, 'Carlos', 'Restrepo','CC', '1000000003', 'cliente@mercaya.com',  '$2b$10$lniMIU9g8.syYfPDESFysevNet2Q0eVkvUjJXybr/pgDLpoFrB77u', '3000000003', 1);
+-- Para generar otro hash en Node:  node -e "console.log(require('bcrypt').hashSync('TuClave', 10))"
+INSERT INTO direcciones (usuario_id, alias, departamento, municipio, barrio, direccion, es_principal) VALUES
+(3, 'Casa', 'Antioquia', 'Rionegro', 'San Antonio', 'Calle 50 # 45-20', 1);
+INSERT INTO tiendas (id, usuario_id, nombre, slug, descripcion, municipio, estado, aprobada_por, aprobada_en) VALUES
+(1, 2, 'Tecno Laura', 'tecno-laura', 'Accesorios de tecnología nuevos y usados', 'Rionegro', 'aprobada', 1, NOW());
+INSERT INTO categorias (id, padre_id, nombre, slug, icono) VALUES
+(1,  NULL, 'Tecnología',         'tecnologia',        'laptop'),
+(2,  NULL, 'Hogar',              'hogar',             'home'),
+(3,  NULL, 'Moda',               'moda',              'shirt'),
+(4,  NULL, 'Deportes',           'deportes',          'bike'),
+(5,  NULL, 'Libros y papelería', 'libros-papeleria',  'book'),
+(6,  NULL, 'Otros',              'otros',             'package'),
+(7,  1,    'Celulares',          'celulares',         'smartphone'),
+(8,  1,    'Computadores',       'computadores',      'monitor'),
+(9,  1,    'Accesorios',         'accesorios-tecno',  'headphones'),
+(10, 2,    'Cocina',             'cocina',            'utensils');
+INSERT INTO productos (id, tienda_id, categoria_id, nombre, slug, descripcion, precio, precio_oferta, stock, sku, condicion, estado) VALUES
+(1, 1, 9, 'Audífonos Bluetooth X200', 'audifonos-bluetooth-x200', 'Audífonos inalámbricos con cancelación de ruido y 30 h de batería.', 189900, 159900, 15, 'TL-AUD-001', 'nuevo', 'publicado'),
+(2, 1, 8, 'Portátil Lenovo i5 8GB',   'portatil-lenovo-i5-8gb',   'Portátil reacondicionado, SSD 256 GB, garantía 3 meses.',          1450000, NULL, 3, 'TL-PC-001', 'reacondicionado', 'publicado'),
+(3, 1, 9, 'Mouse inalámbrico',        'mouse-inalambrico',        'Mouse ergonómico 2.4 GHz.',                                         45000, NULL, 40, 'TL-MOU-001', 'nuevo', 'pendiente');
+INSERT INTO producto_imagenes (producto_id, url, orden, es_principal) VALUES
+(1, 'https://res.cloudinary.com/demo/image/upload/mercaya/audifonos.jpg', 0, 1),
+(2, 'https://res.cloudinary.com/demo/image/upload/mercaya/portatil.jpg',  0, 1);
+INSERT INTO carritos (usuario_id) VALUES (3);
+-- =====================================================================
+-- CONSULTAS DE EJEMPLO PARA EL BACKEND (Express + mysql2)
+-- =====================================================================
+-- Catálogo con búsqueda y filtro:
+--   SELECT * FROM v_catalogo WHERE categoria_id = ? AND precio_final BETWEEN ? AND ?
+--   ORDER BY created_at DESC LIMIT ? OFFSET ?;
+-- Búsqueda de texto:
+--   SELECT id, nombre FROM productos
+--   WHERE estado = 'publicado' AND MATCH(nombre, descripcion) AGAINST (? IN NATURAL LANGUAGE MODE);
+-- Pedidos pendientes de un vendedor:
+--   SELECT p.codigo, d.nombre_producto, d.cantidad, d.estado_item
+--   FROM detalle_pedido d JOIN pedidos p ON p.id = d.pedido_id
+--   WHERE d.tienda_id = ? AND d.estado_item IN ('pendiente','en_preparacion');
+-- Descontar stock dentro de la transacción de checkout (evita sobreventa):
+--   UPDATE productos SET stock = stock - ? WHERE id = ? AND stock >= ?;
+--   -- si affectedRows = 0 -> ROLLBACK y avisar "sin stock suficiente"
+-- =====================================================================
+-- FIN DEL SCRIPT
+-- =====================================================================
+8. Conclusiones
+La especificación de 42 requisitos funcionales organizados por módulos y 23 requisitos no funcionales verificables ofrece una base clara y medible para el desarrollo de MercaYa, y permite distinguir con precisión las responsabilidades de los roles administrador, vendedor y cliente.
+Las 28 historias de usuario, priorizadas con MoSCoW y estimadas en 103 puntos, facilitan la planificación de sprints: las historias «Must» conforman el producto mínimo viable (registro, tiendas, publicación, catálogo, carrito, pago, seguimiento e instalación PWA), mientras que las «Should» y «Could» enriquecen versiones posteriores.
+El modelo entidad-relación de 18 entidades en tercera forma normal soporta el escenario multivendedor, conserva el histórico de las compras y garantiza la integridad mediante claves foráneas, restricciones CHECK y transacciones InnoDB. Su implementación en MySQL sobre Clever Cloud, junto con React + Vite PWA y Express, conforma una arquitectura moderna, desplegable en la nube y alineada con las buenas prácticas de seguridad del OWASP Top 10 y la normativa colombiana de protección de datos.
+Referencias
+Clever Cloud. (s. f.). MySQL add-on. Clever Cloud Documentation. https://www.clever-cloud.com/developers/doc/addons/mysql/
+Cohn, M. (2004). User stories applied: For agile software development. Addison-Wesley.
+Congreso de la República de Colombia. (2012, 17 de octubre). Ley Estatutaria 1581 de 2012, por la cual se dictan disposiciones generales para la protección de datos personales. Diario Oficial No. 48.587.
+Elmasri, R., & Navathe, S. B. (2016). Fundamentals of database systems (7.ª ed.). Pearson.
+International Organization for Standardization. (2018). ISO/IEC/IEEE 29148:2018. Systems and software engineering — Life cycle processes — Requirements engineering. ISO.
+International Organization for Standardization. (2023). ISO/IEC 25010:2023. Systems and software engineering — Systems and software Quality Requirements and Evaluation (SQuaRE) — Product quality model. ISO.
+MDN Web Docs. (s. f.). Progressive web apps. Mozilla. https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps
+Oracle. (s. f.). MySQL 8.0 reference manual. https://dev.mysql.com/doc/refman/8.0/en/
+OWASP Foundation. (2021). OWASP Top 10:2021. https://owasp.org/Top10/
+Sommerville, I. (2016). Software engineering (10.ª ed.). Pearson.
+Vite PWA. (s. f.). Vite PWA: Zero-config PWA for Vite. https://vite-pwa-org.netlify.app/
+World Wide Web Consortium. (2018). Web Content Accessibility Guidelines (WCAG) 2.1. https://www.w3.org/TR/WCAG21/

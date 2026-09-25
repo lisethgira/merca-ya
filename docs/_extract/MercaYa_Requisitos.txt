@@ -1,0 +1,385 @@
+ESPECIFICACIÓN DE REQUISITOS
+Aplicación web progresiva (PWA) de compra y venta de productos varios
+Requisitos funcionales y no funcionales · Roles: administrador, vendedor y cliente
+Liseth Arelis Giraldo Morales
+Desarrolladora de software
+Rionegro, Antioquia
+Septiembre de 2026
+Tabla de contenido
+Si la tabla aparece vacía, haz clic derecho sobre ella en Word y elige «Actualizar campos».
+1. Introducción
+MercaYa es una aplicación web progresiva (PWA) de comercio electrónico tipo marketplace, desarrollada con React + Vite PWA y Tailwind CSS en el frontend, Node.js + Express en el backend y MySQL alojado en Clever Cloud. En ella múltiples vendedores publican productos de distintas categorías y los clientes pueden buscarlos, comprarlos, pagarlos y calificarlos desde cualquier dispositivo, bajo la supervisión de un administrador.
+Este documento especifica los requisitos funcionales y no funcionales del sistema, siguiendo los lineamientos de la norma ISO/IEC/IEEE 29148:2018 y el modelo de calidad de producto ISO/IEC 25010:2023. Cada requisito tiene un identificador único, una descripción verificable, el rol involucrado y su prioridad, para facilitar la trazabilidad con las historias de usuario y las pruebas.
+1.1 Roles del sistema
+Rol
+Descripción
+Permisos principales
+Administrador
+Responsable de la operación y la confianza de la plataforma.
+Gestionar usuarios, tiendas, categorías, moderación de productos, reportes, pedidos, pagos e indicadores.
+Vendedor
+Usuario con tienda aprobada que publica productos.
+Gestionar su tienda, productos, imágenes, inventario, ventas recibidas, preguntas y estadísticas.
+Cliente
+Usuario que compra productos (rol por defecto al registrarse).
+Explorar, buscar, carrito, favoritos, comprar, pagar, seguir pedidos, reseñar, preguntar y reportar.
+Visitante
+Persona no autenticada (no es un rol almacenado).
+Explorar el catálogo y ver el detalle de productos; debe registrarse para comprar.
+2. Requisitos funcionales
+Los requisitos funcionales describen los servicios que el sistema debe proporcionar y cómo debe reaccionar ante entradas y situaciones particulares (Sommerville, 2016). Se identifican con el prefijo RF, se agrupan por módulo y se priorizan como Alta, Media o Baja según su valor para el producto mínimo viable (MVP).
+Módulo 1. Autenticación y gestión de cuenta
+ID
+Nombre
+Descripción
+Rol
+Prioridad
+RF01
+Registro de cliente
+El sistema debe permitir que un visitante se registre con nombres, apellidos, correo electrónico, contraseña y teléfono, aceptando la política de tratamiento de datos. Por defecto se asigna el rol cliente.
+Visitante
+Alta
+RF02
+Solicitud de cuenta de vendedor
+El sistema debe permitir que un usuario solicite convertirse en vendedor creando una tienda (nombre, descripción, logo, municipio, contacto). La tienda queda en estado «pendiente» hasta que el administrador la apruebe.
+Cliente / Vendedor
+Alta
+RF03
+Inicio de sesión
+El sistema debe autenticar a los usuarios con correo y contraseña, emitiendo un token de acceso (JWT) y un token de refresco, y redirigirlos al panel correspondiente según su rol.
+Todos
+Alta
+RF04
+Cierre de sesión
+El sistema debe permitir cerrar sesión invalidando el token de refresco y limpiando los datos de sesión del dispositivo.
+Todos
+Alta
+RF05
+Recuperación de contraseña
+El sistema debe enviar un enlace temporal (vigencia de 30 minutos) al correo registrado para restablecer la contraseña.
+Todos
+Media
+RF06
+Gestión de perfil
+El sistema debe permitir consultar y actualizar datos personales, foto de perfil y contraseña (solicitando la contraseña actual).
+Todos
+Media
+RF07
+Gestión de direcciones
+El sistema debe permitir registrar, editar, eliminar y marcar como principal varias direcciones de envío (departamento, municipio, barrio, dirección y referencia).
+Cliente
+Alta
+RF08
+Control de acceso por roles
+El sistema debe restringir rutas del frontend y endpoints del backend según el rol (administrador, vendedor, cliente) mediante middleware de autorización.
+Sistema
+Alta
+Módulo 2. Administración
+ID
+Nombre
+Descripción
+Rol
+Prioridad
+RF09
+Panel de indicadores
+El sistema debe mostrar al administrador un dashboard con total de ventas, pedidos por estado, usuarios registrados, tiendas y productos pendientes de aprobación y reportes abiertos.
+Administrador
+Media
+RF10
+Gestión de usuarios
+El sistema debe permitir listar, buscar y filtrar usuarios, ver su detalle, cambiar su rol y activarlos, inactivarlos o bloquearlos.
+Administrador
+Alta
+RF11
+Gestión de tiendas
+El sistema debe permitir aprobar, rechazar o suspender tiendas, registrando el motivo, la fecha y el administrador responsable, y notificar al vendedor.
+Administrador
+Alta
+RF12
+Gestión de categorías
+El sistema debe permitir crear, editar, activar/desactivar y organizar categorías y subcategorías (jerarquía padre-hijo) con nombre, slug e ícono.
+Administrador
+Alta
+RF13
+Moderación de productos
+El sistema debe permitir revisar las publicaciones en estado «pendiente» y aprobarlas o rechazarlas indicando el motivo.
+Administrador
+Alta
+RF14
+Gestión de reportes
+El sistema debe listar las denuncias de productos, permitir cambiar su estado (abierto, en revisión, resuelto, descartado) y registrar la resolución.
+Administrador
+Media
+RF15
+Supervisión de pedidos y pagos
+El sistema debe permitir consultar todos los pedidos y pagos de la plataforma con filtros por fecha, estado, tienda y cliente.
+Administrador
+Media
+RF16
+Reportes exportables
+El sistema debe generar reportes de ventas por período y por tienda exportables en CSV o PDF.
+Administrador
+Baja
+Módulo 3. Vendedor
+ID
+Nombre
+Descripción
+Rol
+Prioridad
+RF17
+Perfil de tienda
+El sistema debe permitir al vendedor editar la información pública de su tienda (nombre, descripción, logo, municipio y contacto).
+Vendedor
+Alta
+RF18
+Gestión de productos
+El sistema debe permitir crear, consultar, editar y eliminar productos con nombre, descripción, categoría, precio, precio de oferta, stock, SKU y condición (nuevo, usado, reacondicionado).
+Vendedor
+Alta
+RF19
+Imágenes de producto
+El sistema debe permitir cargar hasta 6 imágenes por producto (JPG, PNG o WebP, máximo 2 MB c/u), ordenarlas y elegir la principal.
+Vendedor
+Alta
+RF20
+Pausar publicación
+El sistema debe permitir pausar y reactivar un producto publicado sin eliminarlo.
+Vendedor
+Media
+RF21
+Control de inventario
+El sistema debe descontar el stock al confirmar un pedido, reponerlo si se cancela y alertar al vendedor cuando el stock sea menor o igual a 3 unidades.
+Vendedor / Sistema
+Alta
+RF22
+Gestión de ventas recibidas
+El sistema debe mostrar al vendedor los ítems de pedidos de su tienda y permitirle cambiar su estado (en preparación, enviado con número de guía, entregado).
+Vendedor
+Alta
+RF23
+Responder preguntas
+El sistema debe permitir al vendedor ver y responder las preguntas que los clientes hacen sobre sus productos.
+Vendedor
+Media
+RF24
+Panel de ventas
+El sistema debe mostrar al vendedor sus ingresos, unidades vendidas, productos más vendidos y calificación promedio de su tienda.
+Vendedor
+Media
+Módulo 4. Cliente (catálogo y compras)
+ID
+Nombre
+Descripción
+Rol
+Prioridad
+RF25
+Explorar catálogo
+El sistema debe mostrar los productos publicados de tiendas aprobadas, con paginación o scroll infinito.
+Visitante / Cliente
+Alta
+RF26
+Búsqueda
+El sistema debe permitir buscar productos por texto en nombre y descripción (índice FULLTEXT).
+Visitante / Cliente
+Alta
+RF27
+Filtros y ordenamiento
+El sistema debe permitir filtrar por categoría, rango de precio, condición, municipio y calificación, y ordenar por relevancia, precio o fecha.
+Visitante / Cliente
+Alta
+RF28
+Detalle de producto
+El sistema debe mostrar galería de imágenes, precio, oferta, stock, datos de la tienda, reseñas y preguntas del producto.
+Visitante / Cliente
+Alta
+RF29
+Carrito de compras
+El sistema debe permitir agregar productos al carrito, modificar cantidades y eliminarlos, validando el stock disponible; el carrito se conserva entre sesiones.
+Cliente
+Alta
+RF30
+Favoritos
+El sistema debe permitir marcar y desmarcar productos como favoritos y consultarlos en una lista.
+Cliente
+Baja
+RF31
+Checkout
+El sistema debe permitir confirmar la compra seleccionando dirección, método de pago y mostrando el resumen (subtotal, envío, descuento, total). El pedido puede incluir productos de varias tiendas.
+Cliente
+Alta
+RF32
+Pagos
+El sistema debe integrar una pasarela de pagos colombiana (p. ej., Wompi o Mercado Pago: tarjeta, PSE, Nequi) y la opción contraentrega, actualizando el estado del pago mediante webhook.
+Cliente / Sistema
+Alta
+RF33
+Historial y seguimiento
+El sistema debe mostrar el historial de pedidos del cliente con el estado de cada ítem y el número de guía cuando exista.
+Cliente
+Alta
+RF34
+Cancelación de pedido
+El sistema debe permitir cancelar un pedido mientras ningún ítem haya sido enviado, reponiendo el stock.
+Cliente
+Media
+RF35
+Reseñas
+El sistema debe permitir calificar (1 a 5 estrellas) y comentar un producto solo cuando el ítem comprado esté entregado, una sola vez por ítem.
+Cliente
+Media
+RF36
+Preguntas al vendedor
+El sistema debe permitir al cliente publicar preguntas en la ficha de un producto.
+Cliente
+Media
+RF37
+Reportar producto
+El sistema debe permitir denunciar un producto indicando el motivo (fraude, prohibido, contenido inapropiado, información falsa, otro).
+Cliente
+Baja
+Módulo 5. Notificaciones y capacidades PWA
+ID
+Nombre
+Descripción
+Rol
+Prioridad
+RF38
+Notificaciones internas
+El sistema debe registrar notificaciones en una bandeja dentro de la app (nuevo pedido, cambio de estado, pregunta, aprobación de tienda) y marcarlas como leídas.
+Todos
+Media
+RF39
+Notificaciones push
+El sistema debe enviar notificaciones Web Push a los dispositivos suscritos cuando ocurran eventos relevantes, previa autorización del usuario.
+Todos
+Media
+RF40
+Instalación de la app
+El sistema debe ofrecer la instalación de la PWA en la pantalla de inicio (evento beforeinstallprompt en Android/escritorio e instrucciones para iOS).
+Todos
+Alta
+RF41
+Funcionamiento sin conexión
+El sistema debe mostrar el catálogo y las páginas visitadas desde caché cuando no haya conexión, e informar al usuario que está sin conexión; las compras requieren conexión.
+Todos
+Alta
+RF42
+Correos transaccionales
+El sistema debe enviar correos de bienvenida, recuperación de contraseña y confirmación de pedido.
+Sistema
+Media
+3. Requisitos no funcionales
+Los requisitos no funcionales establecen restricciones y atributos de calidad del sistema. Se clasifican según las características del modelo de calidad de producto ISO/IEC 25010:2023 (eficiencia de desempeño, seguridad, usabilidad, compatibilidad, fiabilidad, mantenibilidad y portabilidad) e incorporan exigencias legales colombianas. Cada requisito incluye un criterio verificable para su aceptación.
+ID
+Categoría
+Descripción
+Criterio de verificación
+RNF01
+Rendimiento
+La PWA debe obtener una puntuación ≥ 90 en Lighthouse (Performance) en móvil y un LCP inferior a 2,5 s en red 4G.
+Auditoría Lighthouse en cada release
+RNF02
+Rendimiento
+Los endpoints de consulta del catálogo deben responder en menos de 500 ms en el percentil 95 con 100 usuarios concurrentes.
+Pruebas de carga (k6 / Artillery)
+RNF03
+Portabilidad (PWA)
+La aplicación debe cumplir los criterios de instalabilidad: manifest.webmanifest con nombre, colores e íconos 192 y 512 px (incluye maskable), service worker generado con vite-plugin-pwa (Workbox) y servicio por HTTPS.
+Chrome DevTools > Application
+RNF04
+Disponibilidad offline
+Estrategias de caché: CacheFirst para recursos estáticos, StaleWhileRevalidate para imágenes y NetworkFirst para la API del catálogo; página de respaldo /offline.
+Prueba en modo avión
+RNF05
+Seguridad
+Las contraseñas se almacenan con bcrypt (mínimo 10 rondas) y deben tener al menos 8 caracteres, una mayúscula, un número y un símbolo.
+Revisión de código y pruebas unitarias
+RNF06
+Seguridad
+Token de acceso JWT con vigencia de 15 minutos y token de refresco de 7 días en cookie httpOnly, Secure y SameSite.
+Pruebas de integración
+RNF07
+Seguridad
+El backend aplica los controles del OWASP Top 10: helmet, CORS restringido al dominio del frontend, express-rate-limit en login (5 intentos/15 min), validación de entradas (zod o express-validator) y consultas parametrizadas con mysql2 para evitar inyección SQL.
+Checklist OWASP / escaneo ZAP
+RNF08
+Seguridad
+Toda la comunicación se realiza sobre HTTPS/TLS (certificados de Vercel y Clever Cloud).
+Verificación de certificados
+RNF09
+Legal
+El tratamiento de datos personales cumple la Ley 1581 de 2012 (Habeas Data): política visible, consentimiento explícito en el registro y opción de eliminación de la cuenta.
+Revisión legal / checklist
+RNF10
+Legal / Seguridad
+La aplicación no almacena datos de tarjetas; el pago se delega a la pasarela certificada PCI DSS y solo se guardan referencias y estados.
+Revisión del modelo de datos
+RNF11
+Usabilidad
+Diseño mobile-first y responsive entre 320 px y 1920 px usando los breakpoints de Tailwind CSS; una compra debe completarse en máximo 5 pasos desde el carrito.
+Pruebas de usabilidad con 5 usuarios
+RNF12
+Accesibilidad
+Cumplimiento del nivel AA de WCAG 2.1: contraste mínimo 4,5:1, navegación por teclado, textos alternativos y etiquetas en formularios.
+Lighthouse Accessibility ≥ 90 / axe
+RNF13
+Compatibilidad
+Funciona en las dos últimas versiones de Chrome, Edge, Firefox y Safari; Android 9+ e iOS 16.4+ (las notificaciones push en iOS requieren la PWA instalada).
+Pruebas cruzadas en dispositivos
+RNF14
+Disponibilidad
+Disponibilidad mínima del 99 % mensual en frontend (Vercel) y backend/base de datos (Clever Cloud).
+Monitoreo (UptimeRobot)
+RNF15
+Integridad
+El checkout se ejecuta en una transacción InnoDB; el stock se descuenta con UPDATE condicional (stock >= cantidad) para evitar sobreventa.
+Pruebas de concurrencia
+RNF16
+Recuperabilidad
+Se conservan copias de seguridad automáticas de la base de datos según el plan de Clever Cloud y un respaldo manual semanal (mysqldump).
+Restauración de prueba trimestral
+RNF17
+Eficiencia de recursos
+El backend usa un pool de conexiones mysql2 con connectionLimit ajustado al máximo de conexiones del plan de Clever Cloud (los planes gratuitos/pequeños tienen límites bajos).
+Revisión de configuración
+RNF18
+Mantenibilidad
+Backend organizado por capas o arquitectura hexagonal (rutas → controladores → casos de uso → repositorios), ESLint + Prettier, Git con ramas y commits convencionales.
+Revisión de pull requests
+RNF19
+Mantenibilidad
+Cobertura mínima de pruebas del 70 % en servicios y casos de uso (Vitest/Jest + Supertest).
+Reporte de cobertura en CI
+RNF20
+Mantenibilidad
+La API REST se documenta con OpenAPI/Swagger y versiona sus rutas (/api/v1).
+Swagger UI publicado
+RNF21
+Escalabilidad
+Las imágenes se guardan en un servicio externo (Cloudinary o Cellar S3 de Clever Cloud), no en la base de datos; todos los listados son paginados.
+Revisión de arquitectura
+RNF22
+Localización
+Interfaz en español, moneda en pesos colombianos con formato es-CO (Intl.NumberFormat) y zona horaria America/Bogota.
+Pruebas funcionales
+RNF23
+Observabilidad
+Registro de peticiones y errores (morgan/winston) con manejo centralizado de excepciones y respuestas de error uniformes.
+Revisión de logs
+4. Conclusiones
+La especificación de 42 requisitos funcionales, organizados en cinco módulos, delimita con precisión las responsabilidades de los roles administrador, vendedor y cliente, y cubre el ciclo completo del marketplace: registro, aprobación de tiendas, publicación, catálogo, carrito, pago, seguimiento, reseñas y notificaciones.
+Los 23 requisitos no funcionales, clasificados según ISO/IEC 25010:2023 y acompañados de un criterio de verificación, convierten atributos de calidad como rendimiento, seguridad, accesibilidad y funcionamiento offline en metas medibles, e incorporan obligaciones legales colombianas como la Ley 1581 de 2012.
+La priorización Alta, Media y Baja permite definir el producto mínimo viable y sirve de base para derivar las historias de usuario, el modelo de datos y los casos de prueba.
+Referencias
+Clever Cloud. (s. f.). MySQL add-on. Clever Cloud Documentation. https://www.clever-cloud.com/developers/doc/addons/mysql/
+Cohn, M. (2004). User stories applied: For agile software development. Addison-Wesley.
+Congreso de la República de Colombia. (2012, 17 de octubre). Ley Estatutaria 1581 de 2012, por la cual se dictan disposiciones generales para la protección de datos personales. Diario Oficial No. 48.587.
+Elmasri, R., & Navathe, S. B. (2016). Fundamentals of database systems (7.ª ed.). Pearson.
+International Organization for Standardization. (2018). ISO/IEC/IEEE 29148:2018. Systems and software engineering — Life cycle processes — Requirements engineering. ISO.
+International Organization for Standardization. (2023). ISO/IEC 25010:2023. Systems and software engineering — Systems and software Quality Requirements and Evaluation (SQuaRE) — Product quality model. ISO.
+MDN Web Docs. (s. f.). Progressive web apps. Mozilla. https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps
+Oracle. (s. f.). MySQL 8.0 reference manual. https://dev.mysql.com/doc/refman/8.0/en/
+OWASP Foundation. (2021). OWASP Top 10:2021. https://owasp.org/Top10/
+Sommerville, I. (2016). Software engineering (10.ª ed.). Pearson.
+Vite PWA. (s. f.). Vite PWA: Zero-config PWA for Vite. https://vite-pwa-org.netlify.app/
+World Wide Web Consortium. (2018). Web Content Accessibility Guidelines (WCAG) 2.1. https://www.w3.org/TR/WCAG21/

@@ -1,0 +1,474 @@
+HISTORIAS DE USUARIO
+Aplicación web progresiva (PWA) de compra y venta de productos varios
+Backlog del producto · Criterios de aceptación · Priorización MoSCoW · Estimación en puntos
+Liseth Arelis Giraldo Morales
+Desarrolladora de software
+Rionegro, Antioquia
+Septiembre de 2026
+Tabla de contenido
+Si la tabla aparece vacía, haz clic derecho sobre ella en Word y elige «Actualizar campos».
+1. Introducción
+MercaYa es una aplicación web progresiva (PWA) de comercio electrónico tipo marketplace, desarrollada con React + Vite PWA y Tailwind CSS en el frontend, Node.js + Express en el backend y MySQL alojado en Clever Cloud. En ella múltiples vendedores publican productos de distintas categorías y los clientes pueden buscarlos, comprarlos, pagarlos y calificarlos desde cualquier dispositivo, bajo la supervisión de un administrador.
+Este documento presenta el backlog del producto expresado en historias de usuario, redactadas según el enfoque de Cohn (2004), con criterios de aceptación, prioridad MoSCoW, estimación en puntos de historia y trazabilidad con los requisitos funcionales (RF) del documento de especificación de requisitos.
+1.1 Roles del sistema
+Rol
+Descripción
+Permisos principales
+Administrador
+Responsable de la operación y la confianza de la plataforma.
+Gestionar usuarios, tiendas, categorías, moderación de productos, reportes, pedidos, pagos e indicadores.
+Vendedor
+Usuario con tienda aprobada que publica productos.
+Gestionar su tienda, productos, imágenes, inventario, ventas recibidas, preguntas y estadísticas.
+Cliente
+Usuario que compra productos (rol por defecto al registrarse).
+Explorar, buscar, carrito, favoritos, comprar, pagar, seguir pedidos, reseñar, preguntar y reportar.
+Visitante
+Persona no autenticada (no es un rol almacenado).
+Explorar el catálogo y ver el detalle de productos; debe registrarse para comprar.
+2. Historias de usuario
+Las historias de usuario se redactan con la plantilla «Como [rol], quiero [funcionalidad], para [beneficio]» y cumplen el criterio INVEST (independiente, negociable, valiosa, estimable, pequeña y verificable) propuesto por Cohn (2004). Los criterios de aceptación siguen el esquema Dado-Cuando-Entonces. La prioridad usa la técnica MoSCoW (Must, Should, Could) y la estimación se expresa en puntos de historia de la serie de Fibonacci.
+2.1 Resumen del backlog
+ID
+Historia
+Rol
+Prioridad
+Puntos
+Requisitos
+HU01
+Registro de cliente
+Visitante
+Must
+3
+RF01
+HU02
+Inicio de sesión
+Usuario registrado
+Must
+3
+RF03, RF08
+HU03
+Recuperar contraseña
+Usuario registrado
+Should
+3
+RF05
+HU04
+Gestionar direcciones
+Cliente
+Must
+2
+RF07
+HU05
+Abrir mi tienda
+Usuario
+Must
+5
+RF02, RF17
+HU06
+Aprobar tiendas
+Administrador
+Must
+3
+RF11
+HU07
+Gestionar categorías
+Administrador
+Must
+3
+RF12
+HU08
+Gestionar usuarios
+Administrador
+Must
+3
+RF10
+HU09
+Moderar productos
+Administrador
+Should
+3
+RF13
+HU10
+Atender reportes
+Administrador
+Could
+3
+RF14
+HU11
+Panel de indicadores
+Administrador
+Should
+5
+RF09, RF15
+HU12
+Publicar producto
+Vendedor
+Must
+8
+RF18, RF19
+HU13
+Gestionar inventario
+Vendedor
+Must
+3
+RF20, RF21
+HU14
+Gestionar mis ventas
+Vendedor
+Must
+5
+RF22, RF39
+HU15
+Responder preguntas
+Vendedor
+Should
+2
+RF23
+HU16
+Ver mis estadísticas
+Vendedor
+Could
+3
+RF24
+HU17
+Buscar y filtrar
+Cliente
+Must
+5
+RF25, RF26, RF27
+HU18
+Ver detalle
+Cliente
+Must
+3
+RF28
+HU19
+Usar el carrito
+Cliente
+Must
+5
+RF29
+HU20
+Guardar favoritos
+Cliente
+Could
+2
+RF30
+HU21
+Pagar mi pedido
+Cliente
+Must
+8
+RF31, RF32, RF42
+HU22
+Seguir mi pedido
+Cliente
+Must
+3
+RF33, RF34
+HU23
+Calificar producto
+Cliente
+Should
+3
+RF35
+HU24
+Preguntar al vendedor
+Cliente
+Should
+2
+RF36
+HU25
+Reportar producto
+Cliente
+Could
+2
+RF37
+HU26
+Instalar la app
+Usuario
+Must
+3
+RF40
+HU27
+Usar sin conexión
+Usuario
+Should
+5
+RF41
+HU28
+Recibir notificaciones
+Usuario
+Should
+5
+RF38, RF39
+Total: 28 historias · 103 puntos de historia.
+2.2 Detalle de las historias de usuario
+HU01 · Registro de cliente
+Historia
+Como visitante, quiero registrarme con mi correo y una contraseña, para poder comprar productos y guardar mi información.
+Criterios de aceptación
+CA1. Dado que ingreso datos válidos y acepto la política de datos, cuando envío el formulario, entonces se crea mi cuenta con rol cliente y quedo autenticado.
+CA2. Si el correo ya existe, se muestra «El correo ya está registrado».
+CA3. La contraseña debe cumplir la política de seguridad (RNF05).
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF01
+HU02 · Inicio de sesión
+Historia
+Como usuario registrado, quiero iniciar sesión con correo y contraseña, para acceder a las funciones de mi rol.
+Criterios de aceptación
+CA1. Con credenciales válidas se me redirige a mi panel (admin, vendedor o catálogo).
+CA2. Con credenciales inválidas se muestra un mensaje genérico sin revelar cuál dato falló.
+CA3. Tras 5 intentos fallidos en 15 minutos se bloquea temporalmente el intento.
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF03, RF08
+HU03 · Recuperar contraseña
+Historia
+Como usuario registrado, quiero restablecer mi contraseña desde mi correo, para recuperar el acceso si la olvido.
+Criterios de aceptación
+CA1. Recibo un enlace con vigencia de 30 minutos.
+CA2. El enlace solo puede usarse una vez.
+CA3. Al cambiarla se cierran las sesiones activas.
+Prioridad / Estimación
+Should · 3 puntos · Requisitos relacionados: RF05
+HU04 · Gestionar direcciones
+Historia
+Como cliente, quiero guardar varias direcciones de envío, para no digitarlas en cada compra.
+Criterios de aceptación
+CA1. Puedo crear, editar y eliminar direcciones.
+CA2. Solo una dirección puede ser principal.
+CA3. La dirección principal se selecciona por defecto en el checkout.
+Prioridad / Estimación
+Must · 2 puntos · Requisitos relacionados: RF07
+HU05 · Abrir mi tienda
+Historia
+Como usuario, quiero solicitar convertirme en vendedor creando mi tienda, para publicar y vender mis productos.
+Criterios de aceptación
+CA1. El nombre de la tienda debe ser único.
+CA2. La tienda queda en estado «pendiente» y se me notifica.
+CA3. Cuando es aprobada, mi rol cambia a vendedor y accedo al panel de vendedor.
+Prioridad / Estimación
+Must · 5 puntos · Requisitos relacionados: RF02, RF17
+HU06 · Aprobar tiendas
+Historia
+Como administrador, quiero revisar y aprobar o rechazar solicitudes de tiendas, para garantizar vendedores confiables.
+Criterios de aceptación
+CA1. Veo el listado de tiendas pendientes con sus datos.
+CA2. Al rechazar o suspender debo escribir un motivo.
+CA3. El vendedor recibe una notificación con el resultado.
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF11
+HU07 · Gestionar categorías
+Historia
+Como administrador, quiero crear y organizar categorías y subcategorías, para que el catálogo sea fácil de navegar.
+Criterios de aceptación
+CA1. Puedo asignar una categoría padre.
+CA2. No puedo eliminar una categoría con productos asociados; solo desactivarla.
+CA3. El slug se genera automáticamente y es único.
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF12
+HU08 · Gestionar usuarios
+Historia
+Como administrador, quiero buscar usuarios y cambiar su estado o rol, para controlar el acceso a la plataforma.
+Criterios de aceptación
+CA1. Puedo filtrar por rol, estado y correo.
+CA2. Un usuario bloqueado no puede iniciar sesión.
+CA3. No puedo bloquear mi propia cuenta.
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF10
+HU09 · Moderar productos
+Historia
+Como administrador, quiero aprobar o rechazar publicaciones pendientes, para evitar productos prohibidos o fraudulentos.
+Criterios de aceptación
+CA1. Solo los productos aprobados aparecen en el catálogo.
+CA2. Al rechazar indico el motivo, que ve el vendedor.
+CA3. El vendedor puede corregir y reenviar la publicación.
+Prioridad / Estimación
+Should · 3 puntos · Requisitos relacionados: RF13
+HU10 · Atender reportes
+Historia
+Como administrador, quiero revisar las denuncias de productos, para tomar acciones sobre publicaciones indebidas.
+Criterios de aceptación
+CA1. Veo los reportes ordenados por fecha y estado.
+CA2. Puedo pausar el producto desde el reporte.
+CA3. Registro la resolución y la fecha de cierre.
+Prioridad / Estimación
+Could · 3 puntos · Requisitos relacionados: RF14
+HU11 · Panel de indicadores
+Historia
+Como administrador, quiero ver métricas generales de la plataforma, para tomar decisiones informadas.
+Criterios de aceptación
+CA1. Veo ventas del mes, pedidos por estado, usuarios nuevos y pendientes de aprobación.
+CA2. Puedo filtrar por rango de fechas.
+CA3. Los datos se cargan en menos de 2 segundos.
+Prioridad / Estimación
+Should · 5 puntos · Requisitos relacionados: RF09, RF15
+HU12 · Publicar producto
+Historia
+Como vendedor, quiero publicar un producto con fotos, precio y stock, para ofrecerlo a los clientes.
+Criterios de aceptación
+CA1. Nombre, categoría, precio y stock son obligatorios.
+CA2. Puedo subir hasta 6 imágenes y elegir la principal.
+CA3. El precio de oferta debe ser menor que el precio normal.
+CA4. El producto queda «pendiente» hasta su aprobación.
+Prioridad / Estimación
+Must · 8 puntos · Requisitos relacionados: RF18, RF19
+HU13 · Gestionar inventario
+Historia
+Como vendedor, quiero actualizar el stock y pausar productos, para no vender lo que no tengo.
+Criterios de aceptación
+CA1. Recibo alerta cuando el stock es ≤ 3.
+CA2. Un producto con stock 0 aparece como «Agotado» y no se puede agregar al carrito.
+CA3. Puedo pausar y reactivar la publicación.
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF20, RF21
+HU14 · Gestionar mis ventas
+Historia
+Como vendedor, quiero ver los pedidos de mis productos y actualizar su estado, para cumplir con los envíos.
+Criterios de aceptación
+CA1. Solo veo los ítems que pertenecen a mi tienda.
+CA2. Para marcar «enviado» debo registrar el número de guía.
+CA3. El cliente recibe notificación push de cada cambio.
+Prioridad / Estimación
+Must · 5 puntos · Requisitos relacionados: RF22, RF39
+HU15 · Responder preguntas
+Historia
+Como vendedor, quiero responder las preguntas de mis productos, para resolver dudas y cerrar ventas.
+Criterios de aceptación
+CA1. Veo las preguntas sin responder primero.
+CA2. La respuesta queda pública en la ficha del producto.
+CA3. El cliente recibe una notificación.
+Prioridad / Estimación
+Should · 2 puntos · Requisitos relacionados: RF23
+HU16 · Ver mis estadísticas
+Historia
+Como vendedor, quiero consultar mis ingresos y productos más vendidos, para evaluar el desempeño de mi tienda.
+Criterios de aceptación
+CA1. Veo ingresos y unidades por período.
+CA2. Veo el top 5 de productos.
+CA3. Los ítems cancelados no se suman.
+Prioridad / Estimación
+Could · 3 puntos · Requisitos relacionados: RF24
+HU17 · Buscar y filtrar
+Historia
+Como cliente, quiero buscar productos y aplicar filtros, para encontrar rápido lo que necesito.
+Criterios de aceptación
+CA1. La búsqueda consulta nombre y descripción.
+CA2. Puedo combinar filtros de categoría, precio, condición y municipio.
+CA3. Los resultados se paginan y pueden ordenarse.
+Prioridad / Estimación
+Must · 5 puntos · Requisitos relacionados: RF25, RF26, RF27
+HU18 · Ver detalle
+Historia
+Como cliente, quiero ver toda la información de un producto, para decidir si lo compro.
+Criterios de aceptación
+CA1. Veo galería, precio, oferta, stock, tienda, reseñas y preguntas.
+CA2. Si hay oferta se muestra el porcentaje de descuento.
+CA3. Puedo compartir el enlace del producto.
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF28
+HU19 · Usar el carrito
+Historia
+Como cliente, quiero agregar productos al carrito y modificar cantidades, para comprar varios productos a la vez.
+Criterios de aceptación
+CA1. No puedo superar el stock disponible.
+CA2. El total se recalcula al cambiar cantidades.
+CA3. El carrito se conserva al cerrar sesión y en otros dispositivos.
+Prioridad / Estimación
+Must · 5 puntos · Requisitos relacionados: RF29
+HU20 · Guardar favoritos
+Historia
+Como cliente, quiero marcar productos como favoritos, para encontrarlos después.
+Criterios de aceptación
+CA1. El ícono de corazón cambia de estado al marcar.
+CA2. Veo mis favoritos en una lista.
+CA3. Si un favorito se agota se indica en la lista.
+Prioridad / Estimación
+Could · 2 puntos · Requisitos relacionados: RF30
+HU21 · Pagar mi pedido
+Historia
+Como cliente, quiero confirmar mi compra y pagar en línea o contraentrega, para recibir mis productos.
+Criterios de aceptación
+CA1. Selecciono dirección y método de pago y veo el resumen antes de confirmar.
+CA2. Si algún producto no tiene stock suficiente, se me informa y no se crea el pedido.
+CA3. Al aprobarse el pago, el pedido pasa a «pagado» y recibo correo de confirmación.
+Prioridad / Estimación
+Must · 8 puntos · Requisitos relacionados: RF31, RF32, RF42
+HU22 · Seguir mi pedido
+Historia
+Como cliente, quiero consultar el estado de mis pedidos y cancelarlos si aún no se envían, para saber cuándo llegan.
+Criterios de aceptación
+CA1. Veo el estado por ítem y el número de guía.
+CA2. Puedo cancelar solo si ningún ítem fue enviado.
+CA3. Al cancelar se repone el stock.
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF33, RF34
+HU23 · Calificar producto
+Historia
+Como cliente, quiero calificar y comentar un producto que recibí, para ayudar a otros compradores.
+Criterios de aceptación
+CA1. Solo puedo reseñar ítems entregados.
+CA2. Solo una reseña por ítem comprado.
+CA3. La calificación promedio del producto se actualiza.
+Prioridad / Estimación
+Should · 3 puntos · Requisitos relacionados: RF35
+HU24 · Preguntar al vendedor
+Historia
+Como cliente, quiero hacer preguntas sobre un producto, para resolver mis dudas antes de comprar.
+Criterios de aceptación
+CA1. La pregunta tiene máximo 500 caracteres.
+CA2. Recibo notificación cuando me responden.
+Prioridad / Estimación
+Should · 2 puntos · Requisitos relacionados: RF36
+HU25 · Reportar producto
+Historia
+Como cliente, quiero denunciar una publicación sospechosa, para mantener la plataforma segura.
+Criterios de aceptación
+CA1. Selecciono un motivo y opcionalmente una descripción.
+CA2. El administrador recibe el reporte en su bandeja.
+Prioridad / Estimación
+Could · 2 puntos · Requisitos relacionados: RF37
+HU26 · Instalar la app
+Historia
+Como usuario, quiero instalar MercaYa en mi celular o computador, para abrirla como una app nativa.
+Criterios de aceptación
+CA1. En Android/escritorio aparece el botón «Instalar app».
+CA2. En iOS se muestran instrucciones «Compartir → Agregar a inicio».
+CA3. La app abre en modo standalone con ícono y splash propios.
+Prioridad / Estimación
+Must · 3 puntos · Requisitos relacionados: RF40
+HU27 · Usar sin conexión
+Historia
+Como usuario, quiero consultar productos vistos aunque no tenga internet, para no perder la experiencia con mala señal.
+Criterios de aceptación
+CA1. Sin conexión se muestra un aviso visible.
+CA2. Las páginas visitadas cargan desde caché.
+CA3. Las acciones de compra se deshabilitan hasta recuperar la conexión.
+Prioridad / Estimación
+Should · 5 puntos · Requisitos relacionados: RF41
+HU28 · Recibir notificaciones
+Historia
+Como usuario, quiero recibir notificaciones push y en la bandeja de la app, para enterarme de novedades de mis pedidos o ventas.
+Criterios de aceptación
+CA1. La app solicita permiso en un momento contextual, no al abrirla.
+CA2. Puedo desactivar las notificaciones desde mi perfil.
+CA3. Al tocar la notificación se abre la pantalla relacionada.
+Prioridad / Estimación
+Should · 5 puntos · Requisitos relacionados: RF38, RF39
+3. Conclusiones
+Las 28 historias de usuario, con un total de 103 puntos, traducen los requisitos del sistema a unidades de trabajo pequeñas, valiosas y verificables, listas para planificar sprints en Scrum.
+Las historias «Must» conforman el producto mínimo viable (registro, tiendas, publicación, catálogo, carrito, pago, seguimiento e instalación PWA), mientras que las «Should» y «Could» enriquecen versiones posteriores. Los criterios de aceptación en formato Dado-Cuando-Entonces sirven directamente como base para las pruebas funcionales.
+Referencias
+Clever Cloud. (s. f.). MySQL add-on. Clever Cloud Documentation. https://www.clever-cloud.com/developers/doc/addons/mysql/
+Cohn, M. (2004). User stories applied: For agile software development. Addison-Wesley.
+Congreso de la República de Colombia. (2012, 17 de octubre). Ley Estatutaria 1581 de 2012, por la cual se dictan disposiciones generales para la protección de datos personales. Diario Oficial No. 48.587.
+Elmasri, R., & Navathe, S. B. (2016). Fundamentals of database systems (7.ª ed.). Pearson.
+International Organization for Standardization. (2018). ISO/IEC/IEEE 29148:2018. Systems and software engineering — Life cycle processes — Requirements engineering. ISO.
+International Organization for Standardization. (2023). ISO/IEC 25010:2023. Systems and software engineering — Systems and software Quality Requirements and Evaluation (SQuaRE) — Product quality model. ISO.
+MDN Web Docs. (s. f.). Progressive web apps. Mozilla. https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps
+Oracle. (s. f.). MySQL 8.0 reference manual. https://dev.mysql.com/doc/refman/8.0/en/
+OWASP Foundation. (2021). OWASP Top 10:2021. https://owasp.org/Top10/
+Sommerville, I. (2016). Software engineering (10.ª ed.). Pearson.
+Vite PWA. (s. f.). Vite PWA: Zero-config PWA for Vite. https://vite-pwa-org.netlify.app/
+World Wide Web Consortium. (2018). Web Content Accessibility Guidelines (WCAG) 2.1. https://www.w3.org/TR/WCAG21/
