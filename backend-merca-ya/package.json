@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
+    "build": "node -e \"console.log('API lista para Vercel')\"",
     "test": "node --test test/**/*.test.js"
   },
   "keywords": [],
