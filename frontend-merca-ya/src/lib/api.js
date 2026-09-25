@@ -1,4 +1,8 @@
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
+const LOCAL_API = 'http://localhost:4000/api/v1';
+const PRODUCTION_API = 'https://backend-merca-ya-kappa.vercel.app/api/v1';
+
+export const API_URL = import.meta.env.VITE_API_URL
+  || (import.meta.env.PROD ? PRODUCTION_API : LOCAL_API);
 export const FILE_ORIGIN = API_URL.replace(/\/api\/v1\/?$/, '');
 
 const TOKEN_KEY = 'mercaya_access';
