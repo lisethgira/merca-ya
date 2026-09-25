@@ -16,6 +16,7 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 const allowedOrigins = new Set([
   'http://localhost:5173',
   'http://127.0.0.1:5173',
+  'https://merca-ya-iota.vercel.app',
   ...env.frontendUrl.split(',').map((item) => item.trim()).filter(Boolean),
 ]);
 
