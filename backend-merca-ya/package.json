@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "build": "node -e \"console.log('API lista para Vercel')\"",
+    "build": "node -e \"require('fs').mkdirSync('dist',{recursive:true}); require('fs').writeFileSync('dist/index.html','MercaYa API')\"",
     "test": "node --test test/**/*.test.js"
   },
   "keywords": [],
