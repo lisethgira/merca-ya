@@ -1,11 +1,42 @@
 const mysql = require('mysql2/promise');
 const env = require('./env');
 
+const RETRYABLE = new Set([
+  'ER_CON_COUNT_ERROR',
+  'ER_USER_LIMIT_REACHED',
+  'PROTOCOL_CONNECTION_LOST',
+  'ECONNRESET',
+  'ETIMEDOUT',
+  'PROTOCOL_ENQUEUE_AFTER_FATAL_ERROR',
+]);
+
 let pool;
 let ensuring;
 
 function isConfigured() {
   return Boolean(env.db.host && env.db.user && env.db.database);
+}
+
+function isRetryable(error) {
+  return RETRYABLE.has(error?.code) || /too many connections/i.test(error?.message || '');
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function connectionOptions() {
+  return {
+    host: env.db.host,
+    port: env.db.port,
+    user: env.db.user,
+    password: env.db.password,
+    database: env.db.database,
+    charset: 'utf8mb4',
+    timezone: '-05:00',
+    decimalNumbers: true,
+    connectTimeout: 10000,
+  };
 }
 
 function getPool() {
@@ -37,7 +68,31 @@ function getPool() {
   return pool;
 }
 
+async function withServerless(fn) {
+  let lastError;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    let connection;
+    try {
+      connection = await mysql.createConnection(connectionOptions());
+      return await fn(connection);
+    } catch (error) {
+      lastError = error;
+      if (!isRetryable(error) || attempt === 2) throw error;
+      await sleep(400 * (attempt + 1));
+    } finally {
+      if (connection) await connection.end().catch(() => {});
+    }
+  }
+  throw lastError;
+}
+
 async function raw(sql, params = []) {
+  if (process.env.VERCEL) {
+    return withServerless(async (connection) => {
+      const [rows] = await connection.query(sql, params);
+      return rows;
+    });
+  }
   const [rows] = await getPool().query(sql, params);
   return rows;
 }
@@ -100,6 +155,19 @@ async function query(sql, params = []) {
 
 async function withTransaction(work) {
   await ensureOnce();
+  if (process.env.VERCEL) {
+    return withServerless(async (connection) => {
+      try {
+        await connection.beginTransaction();
+        const result = await work(connection);
+        await connection.commit();
+        return result;
+      } catch (error) {
+        await connection.rollback().catch(() => {});
+        throw error;
+      }
+    });
+  }
   const connection = await getPool().getConnection();
   try {
     await connection.beginTransaction();
