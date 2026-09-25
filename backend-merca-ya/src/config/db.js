@@ -16,7 +16,8 @@ function getPool() {
     throw error;
   }
   if (!pool) {
-    const limit = Math.min(Math.max(env.db.connectionLimit || 3, 1), 4);
+    const requested = process.env.VERCEL ? 1 : (env.db.connectionLimit || 3);
+    const limit = Math.min(Math.max(requested, 1), 4);
     pool = mysql.createPool({
       host: env.db.host,
       port: env.db.port,
